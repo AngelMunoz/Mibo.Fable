@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="build/EasyBuild.fsproj" />
+  <Project Path="demo/Demo.fsproj" />
+  <Project Path="src/Mibo.Fable.fsproj" />
+</Solution>

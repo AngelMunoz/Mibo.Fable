@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "fantomas": {
+      "version": "7.0.6",
+      "commands": [
+        "fantomas"
+      ],
+      "rollForward": false
+    },
+    "fable": {
+      "version": "5.15.0",
+      "commands": [
+        "fable"
+      ],
+      "rollForward": false
+    },
+    "husky": {
+      "version": "0.9.1",
+      "commands": [
+        "husky"
+      ],
+      "rollForward": false
+    },
+    "easybuild.commitlinter": {
+      "version": "2.0.0",
+      "commands": [
+        "commit-linter"
+      ],
+      "rollForward": false
+    },
+    "easybuild.changeloggen": {
+      "version": "5.1.0",
+      "commands": [
+        "changelog-gen"
+      ],
+      "rollForward": false
+    }
+  }
+}

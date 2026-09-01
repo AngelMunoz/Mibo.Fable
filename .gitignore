@@ -1,0 +1,14 @@
+.ionide/
+npm/
+
+# Fable-compiled output — never commit generated JS
+*.fs.js
+*.fs.js.map
+*.fable-temp.csproj
+fable_modules/
+
+obj/
+bin/
+.DS_Store
+node_modules/
+demo/dist/

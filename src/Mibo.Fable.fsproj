@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ChangelogFile>$(MSBuildThisFileDirectory)../CHANGELOG.md</ChangelogFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Web-first core: own vector types replace System.Numerics (which
+             Fable cannot compile). Keep Vectors.fs first in compile order. -->
+        <Compile Include="Vectors.fs" />
+        <Compile Include="Collections.fs" />
+        <Compile Include="Color.fs" />
+        <Compile Include="Animation3D.fs" />
+        <Compile Include="Elmish.Time.fs" />
+        <Compile Include="Elmish.Commands.fs" />
+        <Compile Include="Elmish.System.fs" />
+        <Compile Include="Elmish.Subscriptions.fs" />
+        <Compile Include="Elmish.Rendering.fs" />
+        <Compile Include="Diagnostics.fs" />
+        <Compile Include="Window.fs" />
+        <Compile Include="Elmish.ProgramTypes.fs" />
+        <Compile Include="Assets.fs" />
+        <Compile Include="Input.fs" />
+        <Compile Include="InputMapper.fs" />
+        <Compile Include="InputServices.fs" />
+        <Compile Include="Elmish.Program.fs" />
+        <Compile Include="Elmish.Loop.fs" />
+        <Compile Include="Elmish.Headless.fs" />
+        <Compile Include="Layout/Grid2D.fs" />
+        <Compile Include="Layout/HexGrid.fs" />
+        <Compile Include="Layout/Spatial2D.fs" />
+        <Compile Include="Layout/HexLayout.fs" />
+        <Compile Include="Layout/LayeredHex.fs" />
+        <Compile Include="Layout/Layout.fs" />
+        <Compile Include="Layout/Platformer.fs" />
+        <Compile Include="Layout/TopDown.fs" />
+        <Compile Include="Layout/Layered.fs" />
+        <Compile Include="Layout3D/Grid3D.fs" />
+        <Compile Include="Layout3D/HexGrid3D.fs" />
+        <Compile Include="Layout3D/Spatial3D.fs" />
+        <Compile Include="Layout3D/Layout3D.fs" />
+        <Compile Include="Layout3D/HexLayout3D.fs" />
+        <Compile Include="Layout3D/LayeredHex3D.fs" />
+        <Compile Include="Layout3D/LayeredGrid3D.fs" />
+        <Compile Include="Layout3D/Interior.fs" />
+        <Compile Include="Layout3D/Terrain.fs" />
+        <Compile Include="Graphics3D/Light3D.fs" />
+        <Compile Include="Graphics2D/Types.fs" />
+        <Compile Include="Graphics/Draw.fs" />
+        <Compile Include="Mibo.Fable.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="EasyBuild.PackageReleaseNotes.Tasks">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Fable.Core" />
+        <PackageReference Include="Fable.Package.SDK" />
+        <PackageReference Include="FSharp.UMX" />
+    </ItemGroup>
+</Project>

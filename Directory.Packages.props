@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="EasyBuild.PackageReleaseNotes.Tasks" Version="2.0.0" />
+    <PackageVersion Include="Fable.Browser.Dom" Version="2.20.0" />
+    <PackageVersion Include="Fable.Core" Version="4.3.0" />
+    <PackageVersion Include="Fable.Package.SDK" Version="1.0.0" />
+    <PackageVersion Include="FSharp.Core" Version="5.0.2" />
+    <PackageVersion Include="FSharp.UMX" Version="1.1.0" />
+  </ItemGroup>
+</Project>
