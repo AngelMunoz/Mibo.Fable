@@ -6,10 +6,12 @@
     "watch": "dotnet fable watch src --sourceMaps",
     "demo": "dotnet fable watch demo --sourceMaps --run vite demo",
     "build:demo": "dotnet fable demo --sourceMaps && vite build demo",
-    "test": "dotnet fable tests/Adaptive.Smoke.fsproj --noCache --sourceMaps && node tests/Adaptive.Smoke.fs.js"
+    "test": "dotnet fable tests/Adaptive.Smoke.fsproj --noCache --sourceMaps && node tests/Adaptive.Smoke.fs.js",
+    "test:qunit": "dotnet fable tests/QUnit.Smoke.fsproj --noCache --sourceMaps && qunit tests/QUnit.Smoke.fs.js"
   },
   "devDependencies": {
     "@types/node": "26.4.0",
+    "qunit": "^2.26.0",
     "vite": "8.2.2"
   },
   "dependencies": {

@@ -15,6 +15,9 @@ importers:
       '@types/node':
         specifier: 26.4.0
         version: 26.4.0
+      qunit:
+        specifier: ^2.26.0
+        version: 2.26.0
       vite:
         specifier: 8.2.2
         version: 8.2.2(@types/node@26.4.0)
@@ -129,6 +132,10 @@ packages:
   '@types/node@26.4.0':
     resolution: {integrity: sha512-faiGnoIrLH/V8cibOMEAZ8pMw6oXqSukl29ra4mN8GdaB2ZewzeaLj+INpV5N+Z1eKWzY+IzaIZH2EIR6YZRNQ==}
 
+  commander@7.2.0:
+    resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
+    engines: {node: '>= 10'}
+
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
@@ -146,6 +153,12 @@ packages:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
+
+  globalyzer@0.1.0:
+    resolution: {integrity: sha512-40oNTM9UfG6aBmuKxk/giHn5nQ8RVz/SS4Ir6zgzOv9/qC3kKZ9v4etGTcJbEl/NyVQH7FGU7d+X1egr57Md2Q==}
+
+  globrex@0.1.2:
+    resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -226,6 +239,10 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  node-watch@0.7.3:
+    resolution: {integrity: sha512-3l4E8uMPY1HdMMryPRUAl+oIHtXtyiTlIiESNSVSNxcPfzAFzeTbXFQkZfAwBbo0B1qMSG8nUABx+Gd+YrbKrQ==}
+    engines: {node: '>=6'}
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -237,6 +254,11 @@ packages:
     resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
     engines: {node: ^10 || ^12 || >=14}
 
+  qunit@2.26.0:
+    resolution: {integrity: sha512-KSv16YomcYmiK90qTOJl3Bm5IvTf2upqQDdBQWCvSQWe94FWobnUgKOpvpvZdG7VkDt3TJSI8k8g9+GGGEd7Fw==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   rolldown@1.2.6:
     resolution: {integrity: sha512-vMM4q3aixf46GiF1Kok8jDPFsEpXgFWGjUHXNkNHNm+Y2adXAG2dbX91jkti3i0ZRsOlcmbuzAz1poObSHCmUA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -245,6 +267,9 @@ packages:
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
+
+  tiny-glob@0.2.9:
+    resolution: {integrity: sha512-g/55ssRPUjShh+xkfx9UPDXqhckHEsHr4Vd9zX55oSdGZc/MD0m3sferOkwWtp98bv+kcVfEHtRJgBVJzelrzg==}
 
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
@@ -353,6 +378,8 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
+  commander@7.2.0: {}
+
   detect-libc@2.1.2: {}
 
   fdir@6.5.0(picomatch@4.0.7):
@@ -361,6 +388,10 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  globalyzer@0.1.0: {}
+
+  globrex@0.1.2: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true
@@ -413,6 +444,8 @@ snapshots:
 
   nanoid@3.3.18: {}
 
+  node-watch@0.7.3: {}
+
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
@@ -422,6 +455,12 @@ snapshots:
       nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  qunit@2.26.0:
+    dependencies:
+      commander: 7.2.0
+      node-watch: 0.7.3
+      tiny-glob: 0.2.9
 
   rolldown@1.2.6:
     dependencies:
@@ -445,6 +484,11 @@ snapshots:
       '@rolldown/binding-win32-x64-msvc': 1.2.6
 
   source-map-js@1.2.1: {}
+
+  tiny-glob@0.2.9:
+    dependencies:
+      globalyzer: 0.1.0
+      globrex: 0.1.2
 
   tinyglobby@0.2.17:
     dependencies:
