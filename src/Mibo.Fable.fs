@@ -1,12 +1,3 @@
-/// <summary>
-/// The JavaScript-facing entry point of Mibo.Fable.
-///
-/// The core simulation lives in the <c>Mibo</c> namespaces (Elmish loop, input,
-/// layout, draw commands). F# game code should use those directly — Fable
-/// compiles it all together. This module wraps the small surface that a
-/// JavaScript/TypeScript host needs to drive the headless simulation runner,
-/// hiding F#-specific shapes (currying, TimeSpan-as-ticks) behind plain calls.
-/// </summary>
 module Mibo.Fable.Exports
 
 open System

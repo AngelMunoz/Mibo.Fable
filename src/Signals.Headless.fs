@@ -27,31 +27,14 @@ open Mibo.Elmish
 // writes and handing out the snapshot.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Deferred `unit -> unit` work — the counterpart of the .NET IntentQueue.
-/// Two lanes: boundary work runs at the start of the next Step (external
-/// events, next-frame work); after-update work runs right after each
-/// Update, before the frame is forced. Work posted during a drain runs in
-/// the same drain. `PostTask` covers the .NET postTask/postAsync: the
-/// work starts immediately (promise concurrency), and its completion
-/// re-enters through the after-update lane. True parallelism stays a
-/// worker concern — a CPU-heavy task still runs on this thread.
 type IntentQueue() =
   let boundary = ResizeArray<unit -> unit>()
   let afterUpdate = ResizeArray<unit -> unit>()
 
-  /// Queues work for the next step's boundary, before Update.
   member _.PostNextFrame(work: unit -> unit) : unit = boundary.Add work
 
-  /// Queues work to run after the next Update (per sub-step), before the
-  /// frame is forced.
   member _.Post(work: unit -> unit) : unit = afterUpdate.Add work
 
-  /// Starts `work` immediately; when the promise settles, the completion
-  /// runs at the next post drain (after Update, before the frame is
-  /// forced) — the counterpart of the .NET postTask/postAsync, whose
-  /// completion returns via post. Rejections route through `onError`;
-  /// without one, the error is rethrown at the drain so it is not
-  /// swallowed.
   member _.PostTask
     (
       work: unit -> Fable.Core.JS.Promise<'T>,
@@ -90,9 +73,6 @@ type IntentQueue() =
 
     afterUpdate.Clear()
 
-/// The Init-phase context: the framework-owned roots plus the intent queue.
-/// Work posted here runs at the startup drain, right after Init returns and
-/// before the first frame is forced — the counterpart of the MVU init Cmd.
 type SignalsFrameContext
   internal
   (
@@ -102,25 +82,17 @@ type SignalsFrameContext
     intents: IntentQueue
   ) =
 
-  /// The framework-owned time root. The runner writes it at the start of
-  /// every step (once per fixed sub-step); projections may depend on it.
   member _.Time = time
 
-  /// Set to true to make the runner stop — the counterpart of
-  /// `CVal.set true ctx.ExitRequested`.
   member _.ExitRequested = exitRequested
 
-  /// The GameContext the runner owns: window dimensions and services.
   member _.Context = ctx
 
   member _.WindowWidth = ctx.WindowWidth
   member _.WindowHeight = ctx.WindowHeight
 
-  /// Deferred work, as documented on IntentQueue.
   member _.Intents = intents
 
-/// The Update-phase context: everything Init received. The frame builder
-/// must not post: it runs after the post drain.
 type SignalsContext
   internal (frameCtx: SignalsFrameContext, intents: IntentQueue) =
 
@@ -131,15 +103,9 @@ type SignalsContext
   member _.WindowHeight = frameCtx.WindowHeight
   member _.Intents = intents
 
-/// An adaptive-style init: the frame force plus disposables. Build the graph
-/// (roots and projections) in the program's Init and return the force that
-/// packs the readonly frame at the end of every step.
 type SignalsInit<'Frame> = {
-  /// Forces the frame's output projections (each recomputes at most once
-  /// if a dependency moved this step) and packs them into 'Frame.
   FrameBuilder: unit -> 'Frame
 
-  /// Disposables released when the runner is disposed.
   Disposables: IDisposable list
 }
 
@@ -171,45 +137,27 @@ module SignalsInit =
           Disposables = disposable :: init.Disposables
     }
 
-/// Fixed-step configuration: converts a variable frame delta into zero or
-/// more fixed-size steps per Step call. The frame is forced once at the end,
-/// so intermediate sub-steps are integrated but not observed.
 type SignalsFixedStepConfig = {
-  /// Fixed simulation step size in seconds (e.g. 1/60 = 0.0166667).
   StepSeconds: float32
 
-  /// Maximum fixed steps per frame — prevents the spiral of death after
-  /// long stalls; remaining accumulated time is dropped.
   MaxStepsPerFrame: int
 
-  /// Clamps the per-frame delta used for accumulation.
   MaxFrameSeconds: float32 voption
 }
 
-/// A signals program: the complete description of a State · Projection ·
-/// Update · Force game. There is no 'Msg and no Cmd — handlers write roots
-/// directly and defer work through the context's Intents.
 type SignalsProgram<'Frame> = {
-  /// Builds the graph (roots, projections) and returns the frame force.
   Init: SignalsFrameContext -> SignalsInit<'Frame>
 
-  /// Per-frame phase: runs after the time root is written and before the
-  /// frame is forced — reads projections, writes roots, posts intents.
-  /// Under fixed-step it runs once per sub-step, each followed by the
-  /// post drain.
   Update: SignalsContext -> GameTime -> unit
 
-  /// Observer factories receiving the forced frame each step.
   Observers: (unit -> IObserver<struct (GameContext * 'Frame * GameTime)>) list
 
-  /// Optional framework-managed fixed-step configuration.
   FixedStep: SignalsFixedStepConfig voption
 }
 
 [<RequireQualifiedAccess>]
 module SignalsProgram =
 
-  /// Creates a signals program from an Init and an Update phase.
   let mkProgram
     (init: SignalsFrameContext -> SignalsInit<'Frame>)
     (update: SignalsContext -> GameTime -> unit)
@@ -231,7 +179,6 @@ module SignalsProgram =
           Observers = factory :: program.Observers
     }
 
-  /// Enables framework-managed fixed-step sub-stepping.
   let withFixedStep
     (cfg: SignalsFixedStepConfig)
     (program: SignalsProgram<'Frame>)
@@ -247,11 +194,6 @@ module SignalsProgram =
           FixedStep = ValueSome cfg
     }
 
-/// Runs a signals program with explicit frame stepping — the counterpart of
-/// AdaptiveHeadless. Same host surface as the MVU HeadlessRunner: Step,
-/// StepN, StepUntil, Dispose, ShouldQuit — but the program mutates signal
-/// roots instead of returning models, and observers receive the forced
-/// readonly frame.
 type SignalsHeadless<'Frame>
   (program: SignalsProgram<'Frame>, ?width: int, ?height: int) =
 
@@ -316,41 +258,32 @@ type SignalsHeadless<'Frame>
       program.Update ctx gameTime
       intents.DrainAfterUpdate())
 
-  /// Whether an exit was requested.
   member _.ShouldQuit =
     ensureInitialized()
     CVal.get frameCtx.ExitRequested
 
-  /// The last forced frame.
   member _.Frame =
     ensureInitialized()
     frame
 
-  /// Total and per-step elapsed time of the last step.
   member _.GameTime =
     ensureInitialized()
     gameTime
 
-  /// The runner's GameContext (services, dimensions).
   member _.Context =
     ensureInitialized()
     gameContext
 
-  /// The intent queue. Hosts and external events post boundary work here
-  /// (it runs at the start of the next step, before Update).
   member _.Intents =
     ensureInitialized()
     intents
 
-  /// Registers an observer notified with (context, forced frame, game
-  /// time) after every step. Safe before or after the first step.
   member this.Observe
     (onNext: struct (GameContext * 'Frame * GameTime) -> unit)
     : unit =
     ensureInitialized()
     observers.Add(HeadlessProgram.observe onNext)
 
-  /// Advances the simulation by one frame of the given elapsed time.
   member _.Step(elapsed: TimeSpan) : unit =
     ensureInitialized()
 
@@ -396,13 +329,10 @@ type SignalsHeadless<'Frame>
       for i = 0 to observers.Count - 1 do
         observers[i].OnNext(struct (gameContext, frame, gameTime))
 
-  /// Advances the simulation by count frames.
   member this.StepN(count: int, elapsed: TimeSpan) : unit =
     for _ = 1 to count do
       this.Step(elapsed)
 
-  /// Advances until the predicate on the forced frame returns true (or
-  /// maxFrames steps). Returns true when the predicate was met.
   member this.StepUntil
     (predicate: 'Frame -> bool, elapsed: TimeSpan, [<Struct>] ?maxFrames: int)
     : bool =
@@ -418,7 +348,6 @@ type SignalsHeadless<'Frame>
 
     met
 
-  /// Releases disposables registered by the program's Init.
   member _.Dispose() : unit =
     if initialized then
       for d in disposables do

@@ -9,6 +9,5 @@ namespace Mibo.Elmish.Graphics2D
 // lives here — same namespace, so existing code is unaffected.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// <summary>Unit of measure for 2D render layer ordering.</summary>
 [<Measure>]
 type RenderLayer

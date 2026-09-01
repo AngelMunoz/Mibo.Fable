@@ -12,10 +12,6 @@ open Mibo.Elmish
 // its native API.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// <summary>
-/// Represents a physical hardware input trigger, expressed in backend-neutral
-/// codes so an <see cref="T:Mibo.Input.InputMap`1"/> is portable across backends.
-/// </summary>
 [<Struct>]
 type Trigger =
   | Key of keyCode: KeyCode
@@ -23,14 +19,6 @@ type Trigger =
   | MouseButton of mouseButton: MouseButtonCode
   | GamepadButton of player: int * gamepadButton: GamepadButtonCode
 
-/// <summary>
-/// Configuration mapping game actions to their trigger inputs.
-/// </summary>
-/// <remarks>
-/// An InputMap is backend-neutral: it stores <see cref="T:Mibo.Input.Trigger"/>
-/// values rather than native key/button types, so the same map works on every
-/// backend. Build maps with the <see cref="M:Mibo.Input.InputMap"/> module helpers.
-/// </remarks>
 type InputMap<'Action when 'Action: comparison> = {
   ActionToTriggers: Map<'Action, Trigger list>
   TriggerToActions: Map<Trigger, 'Action list>
@@ -74,22 +62,6 @@ module InputMap =
     =
     bind action (GamepadButton(player, btn)) map
 
-/// <summary>
-/// Runtime state tracking which actions are currently active.
-/// </summary>
-/// <remarks>
-/// ActionState is the "output" of the input mapping system. It tells you
-/// which actions are held, just started, or just released.
-/// </remarks>
-/// <example>
-/// <code>
-/// if actionState.Started.Contains Jump then
-///     // Player just pressed jump this frame
-///
-/// if actionState.Held.Contains MoveLeft then
-///     // Player is holding left
-/// </code>
-/// </example>
 type ActionState<'Action when 'Action: comparison> = {
   Held: Set<'Action>
   Started: Set<'Action>
@@ -184,11 +156,6 @@ module ActionState =
           Released = Set.union current.Released incoming.Released
     }
 
-/// <summary>
-/// Service interface for input mapping. The contract lives in Core; each backend
-/// supplies an implementation that polls its native API to evaluate whether each
-/// <see cref="T:Mibo.Input.Trigger"/> is held.
-/// </summary>
 type IInputMapper<'Action when 'Action: comparison> =
   abstract CurrentState: ActionState<'Action>
   abstract Update: unit -> unit

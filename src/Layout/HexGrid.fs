@@ -18,12 +18,10 @@ type HexGrid<'T> = {
 }
 
 module HexGrid =
-  let inline private toIndex col row width = col + row * width
+  let inline toIndex (col: int) (row: int) (width: int) : int =
+    col + row * width
 
-  let inline private hexDimensions
-    (size: float32)
-    (orientation: HexOrientation)
-    =
+  let inline hexDimensions (size: float32) (orientation: HexOrientation) =
     match orientation with
     | PointyTop -> struct (size * sqrt 3f, size * 2f)
     | FlatTop -> struct (size * 2f, size * sqrt 3f)
@@ -61,7 +59,7 @@ module HexGrid =
       let idx = toIndex col row grid.Width
       grid.Cells.[idx] <- ValueNone
 
-  let inline getWorldPos col row (grid: HexGrid<'T>) : Vector2 =
+  let inline getWorldPos (col: int) (row: int) (grid: HexGrid<'T>) : Vector2 =
     let struct (hexW, hexH) = hexDimensions grid.Size grid.Orientation
 
     match grid.Orientation with

@@ -11,7 +11,7 @@ type CellGrid2D<'T> = {
 }
 
 module CellGrid2D =
-  let inline private toIndex x y width = x + y * width
+  let inline toIndex (x: int) (y: int) (width: int) : int = x + y * width
 
   let create
     width
@@ -44,7 +44,7 @@ module CellGrid2D =
       let idx = toIndex x y grid.Width
       grid.Cells.[idx] <- ValueNone
 
-  let inline getWorldPos x y (grid: CellGrid2D<'T>) : Vector2 =
+  let inline getWorldPos (x: int) (y: int) (grid: CellGrid2D<'T>) : Vector2 =
     Vector2(
       grid.Origin.X + float32 x * grid.CellSize.X,
       grid.Origin.Y + float32 y * grid.CellSize.Y

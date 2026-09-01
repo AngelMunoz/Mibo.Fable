@@ -2,7 +2,6 @@ namespace Mibo.Layout3D
 
 open Mibo.Vectors
 
-/// A simple axis-aligned bounding box struct for volume queries.
 [<Struct>]
 type BoundingBox = { Min: Vector3; Max: Vector3 }
 
@@ -17,7 +16,13 @@ type CellGrid3D<'T> = {
 }
 
 module CellGrid3D =
-  let inline private toIndex x y z width height =
+  let inline toIndex
+    (x: int)
+    (y: int)
+    (z: int)
+    (width: int)
+    (height: int)
+    : int =
     x + y * width + z * width * height
 
   let create
@@ -74,7 +79,12 @@ module CellGrid3D =
       let idx = toIndex x y z grid.Width grid.Height
       grid.Cells.[idx] <- ValueNone
 
-  let inline getWorldPos x y z (grid: CellGrid3D<'T>) : Vector3 =
+  let inline getWorldPos
+    (x: int)
+    (y: int)
+    (z: int)
+    (grid: CellGrid3D<'T>)
+    : Vector3 =
     Vector3(
       grid.Origin.X + float32 x * grid.CellSize.X,
       grid.Origin.Y + float32 y * grid.CellSize.Y,

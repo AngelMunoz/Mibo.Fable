@@ -21,13 +21,6 @@ open Mibo.Diagnostics
 //   3. reads Model / ShouldQuit / GameTime as needed
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// <summary>
-/// Internal message queue supporting optional frame-bounded dispatch.
-/// </summary>
-/// <remarks>
-/// Extracted from the runtime so both the windowed and headless hosts share it.
-/// Kept internal — hosts interact with it through <see cref="T:Mibo.Elmish.ElmishLoop`2"/>.
-/// </remarks>
 type internal DispatchQueue<'Msg>(mode: DispatchMode) =
   let gate = obj()
   let mutable isProcessing = false
@@ -67,19 +60,9 @@ type internal DispatchQueue<'Msg>(mode: DispatchMode) =
     else
       ValueNone
 
-/// <summary>
-/// The six fields that define message-processing behavior, shared by
-/// <see cref="T:Mibo.Elmish.Program`2"/> and <see cref="T:Mibo.Elmish.HeadlessProgram`2"/>.
-/// </summary>
-/// <remarks>
-/// Each host projects its program type to a <c>LoopCore</c> via a trivial accessor,
-/// so neither <c>Program</c> nor <c>HeadlessProgram</c> changes shape.
-/// </remarks>
 [<Struct>]
 type LoopCore<'Model, 'Msg> = {
   Init: GameContext -> struct ('Model * Cmd<'Msg>)
-  /// The update the pump invokes. Always context-taking: the program
-  /// projections adapt a context-free <c>Program.Update</c> to this shape.
   Update: GameContext -> 'Msg -> 'Model -> struct ('Model * Cmd<'Msg>)
   Subscribe: GameContext -> 'Model -> Sub<'Msg>
   Tick: (GameTime -> 'Msg) voption
@@ -87,16 +70,6 @@ type LoopCore<'Model, 'Msg> = {
   DispatchMode: DispatchMode
 }
 
-/// <summary>
-/// The shared message-processing loop used by every Mibo host
-/// (<c>RaylibGame</c>, <c>HeadlessRunner</c>, future backends).
-/// </summary>
-/// <remarks>
-/// Owns all mutable loop state: the dispatch queue, current model, active
-/// subscriptions, deferred-effect buffers, and the fixed-step accumulator.
-/// Hosts call <see cref="M:Mibo.Elmish.ElmishLoop`2.Init"/> once after registering
-/// backend services, then <see cref="M:Mibo.Elmish.ElmishLoop`2.TickFrame"/> each frame.
-/// </remarks>
 type ElmishLoop<'Model, 'Msg> internal (core: LoopCore<'Model, 'Msg>) =
 
   let msgQueue = DispatchQueue<'Msg>(core.DispatchMode)
@@ -164,26 +137,16 @@ type ElmishLoop<'Model, 'Msg> internal (core: LoopCore<'Model, 'Msg>) =
         activeSubs.Remove(key) |> ignore
       | ValueNone -> ()
 
-  /// <summary>Whether the loop has received a <c>Cmd.Quit</c> signal.</summary>
   member _.ShouldQuit = shouldQuit
 
-  /// <summary>The current model state.</summary>
   member _.Model = state
 
-  /// <summary>The <see cref="T:Mibo.Elmish.GameContext"/> passed to <see cref="M:Mibo.Elmish.ElmishLoop`2.Init"/>, if initialized.</summary>
   member _.Context = ctxOpt
 
-  /// <summary>The registered active subscriptions (for host-side disposal).</summary>
   member internal _.ActiveSubs = activeSubs
 
-  /// <summary>Dispatch a message into the loop's queue.</summary>
   member _.Dispatch(msg: 'Msg) = dispatch msg
 
-  /// <summary>
-  /// Initialize the loop: store the context, call the program's <c>Init</c>,
-  /// execute startup commands, and start initial subscriptions.
-  /// </summary>
-  /// <remarks>Call exactly once, after the host has registered backend services.</remarks>
   member _.Init(ctx: GameContext) =
     ctxOpt <- ValueSome ctx
     profilerOpt <- GameContext.tryGetService<FrameProfiler> ctx
@@ -192,21 +155,6 @@ type ElmishLoop<'Model, 'Msg> internal (core: LoopCore<'Model, 'Msg>) =
     execCmd initialCmds
     updateSubs ctx
 
-  /// <summary>
-  /// Advance the simulation by one frame: drain deferred effects, run fixed-step,
-  /// dispatch the tick message, process all queued messages, and update
-  /// subscriptions if any messages were processed this frame.
-  /// </summary>
-  /// <remarks>
-  /// Subscription re-evaluation is keyed on "messages were processed" rather than
-  /// "the model is structurally different", because Mibo permits in-place mutable
-  /// models (e.g. a class whose fields are mutated by each system) whose
-  /// <c>Update</c> returns the same reference every frame. Reference or structural
-  /// equality would never detect a change for those models.
-  /// </remarks>
-  /// <param name="elapsed">Frame delta (e.g. <c>TimeSpan.FromMilliseconds(16)</c> for 60fps).</param>
-  /// <param name="gameTime">The current game time, supplied by the host.</param>
-  /// <returns><c>true</c> if any messages were processed this frame; <c>false</c> otherwise.</returns>
   member _.TickFrame(elapsed: TimeSpan, gameTime: GameTime) : bool =
     let deltaSeconds = float32 elapsed.TotalSeconds
 
@@ -273,19 +221,14 @@ type ElmishLoop<'Model, 'Msg> internal (core: LoopCore<'Model, 'Msg>) =
 
     stateChanged
 
-  /// <summary>
-  /// Dispose all active subscriptions. Hosts should call this on shutdown.
-  /// </summary>
   member _.DisposeSubs() =
     for KeyValueV(_key, disp) in activeSubs do
       disp.Dispose()
 
     activeSubs.Clear()
 
-/// Functions for constructing and working with <see cref="T:Mibo.Elmish.ElmishLoop`2"/>.
 module ElmishLoop =
 
-  /// <summary>Creates an <see cref="T:Mibo.Elmish.ElmishLoop`2"/> from a <see cref="T:Mibo.Elmish.LoopCore`2"/>.</summary>
   let create(core: LoopCore<'Model, 'Msg>) = ElmishLoop<'Model, 'Msg>(core)
 
   /// <summary>Projects a <see cref="T:Mibo.Elmish.Program`2"/> to a <see cref="T:Mibo.Elmish.LoopCore`2"/>.</summary>

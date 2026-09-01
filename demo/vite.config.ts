@@ -34,6 +34,11 @@ export default defineConfig(async ({ command, mode }) => {
     return {
         base: baseUrl,
         plugins: [],
+        // Emit source maps so bundle stack traces map back to the F# sources
+        // (Fable generates the per-module .fs.js.map files).
+        build: {
+            sourcemap: true,
+        },
         server: {
             watch: {
                 ignored: [

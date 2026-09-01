@@ -7,49 +7,21 @@ open System.Threading
 open System.Threading.Tasks
 open Mibo.Diagnostics
 
-/// <summary>
-/// A program configuration for running the Elmish update loop without graphics.
-/// </summary>
-/// <remarks>
-/// HeadlessProgram shares the core Elmish architecture (Init, Update, Subscribe, Tick, FixedStep)
-/// with the full Program type, but excludes renderers and window configuration.
-/// Use <see cref="M:Mibo.Elmish.HeadlessProgram.mkHeadless"/> to create one.
-/// </remarks>
 type HeadlessProgram<'Model, 'Msg> = {
-  /// <summary>Creates initial model and commands when the headless runner starts.</summary>
   Init: GameContext -> struct ('Model * Cmd<'Msg>)
-  /// <summary>Handles messages and returns updated model and commands.</summary>
   Update: 'Msg -> 'Model -> struct ('Model * Cmd<'Msg>)
-  /// <summary>
-  /// Optional context-aware update. When set, the runner calls this instead of
-  /// <see cref="F:Mibo.Elmish.HeadlessProgram`2.Update"/>, passing the
-  /// <see cref="T:Mibo.Elmish.GameContext"/> the runner owns.
-  /// </summary>
-  /// <remarks>Set via <see cref="M:Mibo.Elmish.HeadlessProgram.mkHeadlessCtx"/>.</remarks>
   UpdateCtx:
     (GameContext -> 'Msg -> 'Model -> struct ('Model * Cmd<'Msg>)) voption
-  /// <summary>Returns subscriptions based on current model state.</summary>
   Subscribe: GameContext -> 'Model -> Sub<'Msg>
-  /// <summary>Optional function to generate a message each frame.</summary>
   Tick: (GameTime -> 'Msg) voption
-  /// <summary>Optional framework-managed fixed timestep configuration.</summary>
   FixedStep: FixedStepConfig<'Msg> voption
-  /// <summary>Controls when dispatched messages become eligible for processing.</summary>
   DispatchMode: DispatchMode
-  /// <summary>Observer factories for receiving model snapshots each frame.</summary>
   Observers: (unit -> IObserver<struct (GameContext * 'Model * GameTime)>) list
-  /// <summary>Optional frame profiler. Set via <see cref="M:Mibo.Elmish.HeadlessProgram.withProfiler"/>.</summary>
-  /// <remarks>When unset, the runner measures nothing.</remarks>
   Profiler: FrameProfiler voption
 }
 
-/// <summary>Extension functions for projecting a <see cref="T:Mibo.Elmish.HeadlessProgram`2"/> onto a <see cref="T:Mibo.Elmish.LoopCore`2"/>.</summary>
 module HeadlessProgram =
 
-  /// <summary>
-  /// Creates a <c>System.IObserver</c> from an <c>onNext</c> callback, hiding
-  /// the <c>OnError</c> and <c>OnCompleted</c> boilerplate.
-  /// </summary>
   let inline observe(onNext: 'T -> unit) : IObserver<'T> =
     { new IObserver<'T> with
         member _.OnNext value = onNext value
@@ -73,9 +45,6 @@ module HeadlessProgram =
       DispatchMode = program.DispatchMode
     }
 
-  /// <summary>
-  /// Creates a new headless program with the given init and update functions.
-  /// </summary>
   let mkHeadless
     (init: GameContext -> struct ('Model * Cmd<'Msg>))
     (update: 'Msg -> 'Model -> struct ('Model * Cmd<'Msg>))
@@ -123,8 +92,6 @@ module HeadlessProgram =
         Subscribe = subscribe
   }
 
-  /// <summary>Adds a per-frame tick message generated from the current <see cref="T:Mibo.Elmish.GameTime"/>.</summary>
-  /// <param name="map">Function that converts the current game time into a message dispatched each frame.</param>
   let withTick map program : HeadlessProgram<'Model, 'Msg> = {
     program with
         Tick = ValueSome map
@@ -170,14 +137,6 @@ module HeadlessProgram =
         Profiler = ValueSome profiler
   }
 
-/// <summary>
-/// Controls execution of a headless Elmish program with explicit frame stepping.
-/// </summary>
-/// <remarks>
-/// The runner delegates message processing to a shared <see cref="T:Mibo.Elmish.ElmishLoop`2"/>
-/// and adds observer notification + virtual time management on top. Call <see cref="Step"/>
-/// or <see cref="StepN"/> to advance the simulation.
-/// </remarks>
 type HeadlessRunner<'Model, 'Msg>
   (program: HeadlessProgram<'Model, 'Msg>, ?width: int, ?height: int) =
 
@@ -216,30 +175,18 @@ type HeadlessRunner<'Model, 'Msg>
     for factory in List.rev program.Observers do
       observers.Add(factory())
 
-  /// <summary>Whether the runner has received a Quit signal.</summary>
   member _.ShouldQuit = loop.ShouldQuit
 
-  /// <summary>The current model state.</summary>
   member _.Model = loop.Model
 
-  /// <summary>Total elapsed virtual time.</summary>
   member _.GameTime = gameTime
 
-  /// <summary>Dispatch a message to the runner.</summary>
   member _.Dispatch(msg: 'Msg) = loop.Dispatch(msg)
 
-  /// <summary>Dispatch multiple messages at once.</summary>
   member _.DispatchMany(msgs: 'Msg seq) =
     for msg in msgs do
       loop.Dispatch(msg)
 
-  /// <summary>Advance the simulation by one frame with the given delta time.</summary>
-  /// <param name="elapsed">Frame delta (e.g. TimeSpan.FromMilliseconds(16) for 60fps). Negative values are clamped to zero.</param>
-  /// <remarks>
-  /// This mutates the runner's internal state (model, game time, subscriptions, deferred commands).
-  /// Do not mix <c>Step</c>/<c>StepN</c>/<c>StepUntil</c> with <c>Run</c>/<c>RunAsync</c> on the same runner
-  /// — they all advance the simulation and using them together will produce simulation corruption.
-  /// </remarks>
   member _.Step(elapsed: TimeSpan) =
     if loop.ShouldQuit then
       ()
@@ -265,29 +212,11 @@ type HeadlessRunner<'Model, 'Msg>
           observers[i].OnNext(ctx, loop.Model, gameTime)
       | ValueNone -> ()
 
-  /// <summary>Advance the simulation by N frames.</summary>
-  /// <param name="count">Number of frames to run.</param>
-  /// <param name="elapsed">Frame delta per step.</param>
-  /// <remarks>
-  /// This mutates the runner's internal state. Do not mix with <c>Run</c>/<c>RunAsync</c>
-  /// on the same runner — they all advance the simulation and using them together
-  /// will produce simulation corruption.
-  /// </remarks>
   member this.StepN(count: int, elapsed: TimeSpan) =
     for _ = 1 to count do
       this.Step elapsed
 
 
-  /// <summary>Advance until a predicate on the model returns true.</summary>
-  /// <param name="predicate">Condition to check after each frame.</param>
-  /// <param name="elapsed">Frame delta per step.</param>
-  /// <param name="maxFrames">Safety limit to prevent infinite loops.</param>
-  /// <returns>True if predicate was met, false if maxFrames was reached.</returns>
-  /// <remarks>
-  /// This mutates the runner's internal state. Do not mix with <c>Run</c>/<c>RunAsync</c>
-  /// on the same runner — they all advance the simulation and using them together
-  /// will produce simulation corruption.
-  /// </remarks>
   member this.StepUntil
     (predicate: 'Model -> bool, elapsed: TimeSpan, [<Struct>] ?maxFrames: int)
     =
@@ -302,7 +231,6 @@ type HeadlessRunner<'Model, 'Msg>
 
     met
 
-  /// <summary>Dispose active subscriptions, observers, and clean up resources.</summary>
   member _.Dispose() =
     loop.DisposeSubs()
 

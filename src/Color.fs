@@ -14,24 +14,9 @@ open Mibo.Vectors
 // to/from its native Color type at the Core↔backend boundary.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// <summary>
-/// A 32-bit RGBA color (8 bits per channel). Backend-neutral — converts to
-/// raylib <c>Color</c> or MonoGame <c>Color</c> at the boundary. Structural
-/// equality and comparison are provided automatically by the F# record.
-/// </summary>
 [<Struct>]
-type Color = {
-  /// <summary>Red channel (0-255).</summary>
-  R: byte
-  /// <summary>Green channel (0-255).</summary>
-  G: byte
-  /// <summary>Blue channel (0-255).</summary>
-  B: byte
-  /// <summary>Alpha channel (0-255).</summary>
-  A: byte
-}
+type Color = { R: byte; G: byte; B: byte; A: byte }
 
-/// <summary>Convenience constructors and conversions for <see cref="T:Mibo.Color"/>.</summary>
 module Color =
 
   /// <summary>Create a color from RGBA byte values.</summary>
@@ -45,7 +30,6 @@ module Color =
   /// <summary>Create an opaque color from RGB byte values (alpha = 255).</summary>
   let inline rgb (r: byte) (g: byte) (b: byte) : Color = create r g b 255uy
 
-  /// <summary>White (255, 255, 255, 255).</summary>
   let White: Color = rgb 255uy 255uy 255uy
 
   /// <summary>Black (0, 0, 0, 255).</summary>

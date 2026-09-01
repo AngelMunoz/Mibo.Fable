@@ -10,7 +10,6 @@ module Grid2DSpatial =
 
   let inline internal toIndex x y w = x + y * w
 
-  /// Internal helpers for A* pathfinding. Not intended for direct use.
   module Internal =
 
     [<Struct>]
@@ -20,7 +19,6 @@ module Grid2DSpatial =
       Priority: float32
     }
 
-    /// Min-heap priority queue for A* pathfinding over a pooled backing array.
     [<Struct>]
     type MinHeap = {
       mutable Items: AStarNode[]
@@ -165,14 +163,20 @@ module Grid2DSpatial =
     result
 
   /// Manhattan distance: cost of moving in 4 directions.
-  let inline distanceManhattan x1 y1 x2 y2 : int = abs(x2 - x1) + abs(y2 - y1)
+  let inline distanceManhattan (x1: int) (y1: int) (x2: int) (y2: int) : int =
+    abs(x2 - x1) + abs(y2 - y1)
 
   /// Chebyshev distance: cost of moving in 8 directions (diagonal = 1).
-  let inline distanceChebyshev x1 y1 x2 y2 : int =
+  let inline distanceChebyshev (x1: int) (y1: int) (x2: int) (y2: int) : int =
     max (abs(x2 - x1)) (abs(y2 - y1))
 
   /// Euclidean distance (straight-line).
-  let inline distanceEuclidean x1 y1 x2 y2 : float32 =
+  let inline distanceEuclidean
+    (x1: int)
+    (y1: int)
+    (x2: int)
+    (y2: int)
+    : float32 =
     let dx = float32(x2 - x1)
     let dy = float32(y2 - y1)
     sqrt(dx * dx + dy * dy)
@@ -583,7 +587,6 @@ module Grid2DSpatial =
 
 module Hex2DSpatial =
 
-  /// Internal helpers for hex spatial operations. Not intended for direct use.
   module Internal =
 
     // Hex neighbor offsets for PointyTop (offset coords)
@@ -633,7 +636,6 @@ module Hex2DSpatial =
       Priority: float32
     }
 
-    /// Min-heap priority queue for hex A* pathfinding over a pooled backing array.
     [<Struct>]
     type MinHeap = {
       mutable Items: AStarNode[]
@@ -712,7 +714,6 @@ module Hex2DSpatial =
     let inline internal dispose(heap: byref<MinHeap>) =
       ArrayPool.Shared.Return(heap.Items)
 
-    /// Iterates hex neighbors via callback. Zero allocation.
     let inline internal forEachNeighbor
       col
       row
@@ -733,7 +734,6 @@ module Hex2DSpatial =
         if nc >= 0 && nc < w && nr >= 0 && nr < h then
           action nc nr
 
-  /// Converts offset (col, row) to cube (q, r, s) coordinates.
   let inline offsetToCube
     col
     row
@@ -749,7 +749,6 @@ module Hex2DSpatial =
       let r = row - (col - (col &&& 1)) / 2
       struct (q, r, -q - r)
 
-  /// Converts cube (q, r, s) to offset (col, row) coordinates.
   let inline cubeToOffset
     q
     r
@@ -764,7 +763,6 @@ module Hex2DSpatial =
       let row = r + (q - (q &&& 1)) / 2
       struct (col, row)
 
-  /// Rounds fractional cube coordinates to the nearest integer hex.
   let inline cubeRound
     (fq: float32)
     (fr: float32)
@@ -823,7 +821,6 @@ module Hex2DSpatial =
           | 5 -> q <- q + 1
           | _ -> ()
 
-  /// Iterates the cells within `range` hex steps via callback. Zero allocation.
   let inline internal forEachInRange
     col
     row
@@ -866,7 +863,13 @@ module Hex2DSpatial =
     result
 
   /// Hex distance using cube coordinates.
-  let inline distance c1 r1 c2 r2 (grid: HexGrid<'T>) : int =
+  let inline distance
+    (c1: int)
+    (r1: int)
+    (c2: int)
+    (r2: int)
+    (grid: HexGrid<'T>)
+    : int =
     let struct (q1, r1c, s1) = offsetToCube c1 r1 grid.Orientation
     let struct (q2, r2c, s2) = offsetToCube c2 r2 grid.Orientation
     (abs(q1 - q2) + abs(r1c - r2c) + abs(s1 - s2)) / 2

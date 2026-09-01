@@ -2,10 +2,11 @@
   "type": "module",
   "scripts": {
     "postinstall": "dotnet tool restore",
-    "build": "dotnet fable src",
-    "watch": "dotnet fable watch src",
-    "demo": "dotnet fable watch demo --run vite demo",
-    "build:demo": "dotnet fable demo && vite build demo"
+    "build": "dotnet fable src --sourceMaps",
+    "watch": "dotnet fable watch src --sourceMaps",
+    "demo": "dotnet fable watch demo --sourceMaps --run vite demo",
+    "build:demo": "dotnet fable demo --sourceMaps && vite build demo",
+    "test": "dotnet fable tests/Adaptive.Smoke.fsproj --noCache --sourceMaps && node tests/Adaptive.Smoke.fs.js"
   },
   "devDependencies": {
     "@types/node": "26.4.0",

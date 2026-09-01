@@ -4,57 +4,19 @@ open System
 open System.Threading.Tasks
 open Fable.Core
 
-/// <summary>
-/// Represents a side effect that can dispatch messages to the Elmish runtime.
-/// </summary>
-/// <remarks>
-/// Effects are the building blocks of commands. They are executed asynchronously
-/// by the runtime and can dispatch one or more messages back to the update loop.
-/// </remarks>
-/// <example>
-/// <code>
-/// let myEffect = Effect&lt;MyMsg&gt;(fun dispatch -&gt;
-///     // Do some side effect work
-///     dispatch (DataLoaded result)
-/// )
-/// </code>
-/// </example>
 type Effect<'Msg> = delegate of ('Msg -> unit) -> unit
 
-/// <summary>
-/// Represents a command that produces side effects in the Elmish runtime.
-/// </summary>
-/// <remarks>
-/// Commands are returned from <c>init</c> and <c>update</c> functions to schedule
-/// side effects that run outside the pure update cycle. They can dispatch
-/// messages back into the runtime, either immediately or deferred.
-/// </remarks>
 [<Struct>]
 type Cmd<'Msg> =
-  /// No-op command (use <see cref="M:Mibo.Elmish.Cmd.none"/>)
   | Empty
-  /// A message to dispatch directly without wrapping in an effect
   | Msg of msg: 'Msg
-  /// Single effect to execute
   | Single of single: Effect<'Msg>
-  /// Multiple effects to execute in this frame
   | Batch of batch: Effect<'Msg>[]
-  /// Effects deferred until the next frame begins
   | DeferNextFrame of batch: Effect<'Msg>[]
-  /// Combination of immediate and deferred effects
   | NowAndDeferNextFrame of now: Effect<'Msg>[] * next: Effect<'Msg>[]
-  /// Signals the runtime to exit after this frame
   | Quit
 
-/// <summary>
-/// Functions for creating and composing Elmish commands.
-/// </summary>
-/// <remarks>
-/// Commands encapsulate side effects and allow message dispatch back to the update loop.
-/// Use commands for async operations, timer callbacks, or any impure work.
-/// </remarks>
 module Cmd =
-  /// <summary>An empty command that does nothing. Use when no side effects are needed.</summary>
   let none: Cmd<'Msg> = Empty
 
   /// <summary>Signals the runtime to exit after the current frame completes.</summary>
@@ -93,9 +55,7 @@ module Cmd =
       DeferNextFrame combined
     | Quit -> Quit
 
-  let inline private split
-    (cmd: Cmd<'Msg>)
-    : struct (Effect<'Msg>[] * Effect<'Msg>[]) =
+  let inline split(cmd: Cmd<'Msg>) : struct (Effect<'Msg>[] * Effect<'Msg>[]) =
     match cmd with
     | Empty -> struct ([||], [||])
     | Msg msg -> struct ([| Effect<'Msg>(fun dispatch -> dispatch msg) |], [||])

@@ -11,7 +11,6 @@ module Grid3DSpatial =
 
   let inline internal toIndex x y z w h = x + y * w + z * w * h
 
-  /// Internal helpers for A* pathfinding. Not intended for direct use.
   module Internal =
 
     [<Struct>]
@@ -22,7 +21,6 @@ module Grid3DSpatial =
       Priority: float32
     }
 
-    /// Min-heap priority queue for 3D A* pathfinding over a pooled backing array.
     [<Struct>]
     type MinHeap = {
       mutable Items: AStarNode[]
@@ -193,15 +191,36 @@ module Grid3DSpatial =
     result
 
   /// Manhattan distance in 3D.
-  let inline distanceManhattan x1 y1 z1 x2 y2 z2 : int =
+  let inline distanceManhattan
+    (x1: int)
+    (y1: int)
+    (z1: int)
+    (x2: int)
+    (y2: int)
+    (z2: int)
+    : int =
     abs(x2 - x1) + abs(y2 - y1) + abs(z2 - z1)
 
   /// Chebyshev distance in 3D (diagonal = 1).
-  let inline distanceChebyshev x1 y1 z1 x2 y2 z2 : int =
+  let inline distanceChebyshev
+    (x1: int)
+    (y1: int)
+    (z1: int)
+    (x2: int)
+    (y2: int)
+    (z2: int)
+    : int =
     max (abs(x2 - x1)) (max (abs(y2 - y1)) (abs(z2 - z1)))
 
   /// Euclidean distance in 3D.
-  let inline distanceEuclidean x1 y1 z1 x2 y2 z2 : float32 =
+  let inline distanceEuclidean
+    (x1: int)
+    (y1: int)
+    (z1: int)
+    (x2: int)
+    (y2: int)
+    (z2: int)
+    : float32 =
     let dx = float32(x2 - x1)
     let dy = float32(y2 - y1)
     let dz = float32(z2 - z1)
@@ -857,7 +876,15 @@ module Hex3DSpatial =
     result
 
   /// Hex distance in 3D: hex distance on the plane + layer difference.
-  let inline distance c1 r1 l1 c2 r2 l2 (grid: HexGrid3D<'T>) : int =
+  let inline distance
+    (c1: int)
+    (r1: int)
+    (l1: int)
+    (c2: int)
+    (r2: int)
+    (l2: int)
+    (grid: HexGrid3D<'T>)
+    : int =
     let struct (q1, r1c, s1) = Hex2DSpatial.offsetToCube c1 r1 grid.Orientation
     let struct (q2, r2c, s2) = Hex2DSpatial.offsetToCube c2 r2 grid.Orientation
     (abs(q1 - q2) + abs(r1c - r2c) + abs(s1 - s2)) / 2 + abs(l2 - l1)

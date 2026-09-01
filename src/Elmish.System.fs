@@ -38,7 +38,7 @@ module System =
   let inline start(model: 'Model) : struct ('Model * Cmd<'Msg>) =
     model, Cmd.none
 
-  let inline private combine (a: Cmd<'Msg>) (b: Cmd<'Msg>) : Cmd<'Msg> =
+  let inline combine (a: Cmd<'Msg>) (b: Cmd<'Msg>) : Cmd<'Msg> =
     match struct (a, b) with
     | Cmd.Empty, x -> x
     | x, Cmd.Empty -> x
