@@ -2,6 +2,7 @@ namespace Mibo.Elmish
 
 open System
 open System.Threading.Tasks
+open Fable.Core
 
 /// <summary>
 /// Represents a side effect that can dispatch messages to the Elmish runtime.
@@ -373,4 +374,30 @@ module Cmd =
             ofError ex |> dispatch
         }
         |> Async.Start)
+    )
+
+  /// Creates a command from a function returning a JS promise — the
+  /// web-first counterpart of <see cref="M:Mibo.Elmish.Cmd.ofTask"/>.
+  ///
+  /// The work is started when the command executes (after the update that
+  /// returned it); when the promise resolves the result is mapped to a
+  /// message and dispatched, landing at the next frame's message drain.
+  /// If the promise rejects, the error handler is invoked instead.
+  ///
+  /// ## Example
+  /// ```fsharp
+  /// Cmd.ofPromise (fetchJson url) () DataLoaded LoadError
+  /// ```
+  let ofPromise
+    (work: 'Args -> JS.Promise<'T>)
+    (args: 'Args)
+    (ofSuccess: 'T -> 'Msg)
+    (ofError: exn -> 'Msg)
+    : Cmd<'Msg> =
+    Single(
+      Effect<'Msg>(fun dispatch ->
+        work args
+        |> Promise.either (fun result -> dispatch(ofSuccess result)) (fun ex ->
+          dispatch(ofError ex))
+        |> ignore)
     )

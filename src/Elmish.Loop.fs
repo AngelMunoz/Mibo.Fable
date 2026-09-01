@@ -62,7 +62,10 @@ type internal DispatchQueue<'Msg>(mode: DispatchMode) =
         next <- tmp)
 
   member _.TryDequeue() : 'Msg voption =
-    if current.Count > 0 then ValueSome(current.Dequeue()) else ValueNone
+    if current.Count > 0 then
+      ValueSome(current.Dequeue())
+    else
+      ValueNone
 
 /// <summary>
 /// The six fields that define message-processing behavior, shared by

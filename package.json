@@ -1,14 +1,17 @@
 {
-    "type": "module",
-    "scripts": {
-        "postinstall": "dotnet tool restore",
-        "build": "dotnet fable src",
-        "watch": "dotnet fable watch src",
-        "demo": "dotnet fable watch demo --run vite demo",
-        "build:demo": "dotnet fable demo && vite build demo"
-    },
-    "devDependencies": {
-        "@types/node": "26.4.0",
-        "vite": "8.2.2"
-    }
+  "type": "module",
+  "scripts": {
+    "postinstall": "dotnet tool restore",
+    "build": "dotnet fable src",
+    "watch": "dotnet fable watch src",
+    "demo": "dotnet fable watch demo --run vite demo",
+    "build:demo": "dotnet fable demo && vite build demo"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.0",
+    "vite": "8.2.2"
+  },
+  "dependencies": {
+    "@preact/signals-core": "^1.14.4"
+  }
 }

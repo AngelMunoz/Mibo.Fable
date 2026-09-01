@@ -138,8 +138,7 @@ type FrameProfiler(window: TimeSpan, canScreenshot: bool) as this =
   /// <param name="now">The current stopwatch stamp.</param>
   member private _.Publish(now: int64) =
     if windowFrames > 0 then
-      let windowSec =
-        float32(float (now - windowStart) / 10000000.0)
+      let windowSec = float32(float(now - windowStart) / 10000000.0)
 
       let drawMs =
         if windowDraws > 0 then
@@ -161,8 +160,7 @@ type FrameProfiler(window: TimeSpan, canScreenshot: bool) as this =
         WorstFrameMs = windowWorstMs
         UpdateMs = windowUpdateMsSum / float32 windowFrames
         DrawMs = drawMs
-        AllocatedBytes =
-          0L - windowAllocStart
+        AllocatedBytes = 0L - windowAllocStart
         Gen0Collections = 0 - windowGen0Start
         Gen1Collections = 0 - windowGen1Start
         Gen2Collections = 0 - windowGen2Start
@@ -211,10 +209,7 @@ type FrameProfiler(window: TimeSpan, canScreenshot: bool) as this =
         this.Publish(now)
 
       if lastFrameStamp <> 0L then
-        let ms =
-          float32(
-            float (now - lastFrameStamp) / 10000.0
-          )
+        let ms = float32(float(now - lastFrameStamp) / 10000.0)
 
         if ms > windowWorstMs then
           windowWorstMs <- ms
@@ -241,9 +236,7 @@ type FrameProfiler(window: TimeSpan, canScreenshot: bool) as this =
   member _.EndUpdate() =
     if this.Enabled then
       let ms =
-        float32(
-          float (System.DateTime.UtcNow.Ticks - updateStart) / 10000.0
-        )
+        float32(float(System.DateTime.UtcNow.Ticks - updateStart) / 10000.0)
 
       windowUpdateMsSum <- windowUpdateMsSum + ms
 
@@ -262,9 +255,7 @@ type FrameProfiler(window: TimeSpan, canScreenshot: bool) as this =
   member _.EndDraw() =
     if this.Enabled then
       let ms =
-        float32(
-          float (System.DateTime.UtcNow.Ticks - drawStart) / 10000.0
-        )
+        float32(float(System.DateTime.UtcNow.Ticks - drawStart) / 10000.0)
 
       windowDrawMsSum <- windowDrawMsSum + ms
       windowDraws <- windowDraws + 1

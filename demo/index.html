@@ -18,6 +18,21 @@
         color: #e6edf3;
         font-family: monospace;
       }
+      .panels {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .panel .label {
+        font-weight: bold;
+      }
       canvas {
         border: 1px solid #2a3038;
         border-radius: 6px;
@@ -26,8 +41,17 @@
     </style>
   </head>
   <body>
-    <div>The simulation runs headless in F#-compiled JS; the page only paints the model.</div>
-    <canvas id="stage" width="480" height="320"></canvas>
+    <div>One simulation, two execution models — the page only paints what each runner publishes. Click a canvas to kick.</div>
+    <div class="panels">
+      <div class="panel">
+        <div class="label">MVU — update returns a new model</div>
+        <canvas id="stage-mvu" width="480" height="320"></canvas>
+      </div>
+      <div class="panel">
+        <div class="label">Signals — update mutates roots, force publishes the frame</div>
+        <canvas id="stage-adaptive" width="480" height="320"></canvas>
+      </div>
+    </div>
     <script type="module" src="/Main.fs.js"></script>
   </body>
 </html>

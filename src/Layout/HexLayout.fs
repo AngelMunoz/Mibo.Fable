@@ -762,6 +762,7 @@ module HexLayout =
     then
       let w = section.BackingGrid.Width
       let idx = gc + gr * w
+
       if section.BackingGrid.Cells.[idx].IsNone then
         section.BackingGrid.Cells.[idx] <- ValueSome content
 

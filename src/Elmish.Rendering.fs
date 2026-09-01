@@ -77,8 +77,7 @@ type RenderBuffer<'Key, 'Cmd when 'Key: comparison>
 
   let initialCapacity = defaultArg capacity 1024
 
-  let mutable items =
-    Array.zeroCreate initialCapacity
+  let mutable items = Array.zeroCreate initialCapacity
 
   let mutable count = 0
   let mutable clearCounter = 0
@@ -117,7 +116,11 @@ type RenderBuffer<'Key, 'Cmd when 'Key: comparison>
   /// Sorts the buffer by key. Call this before iterating if order matters.
   member _.Sort() =
     let view = Array.sub items 0 count
-    Array.sortInPlaceWith(fun (struct (k1, _)) (struct (k2, _)) -> keyComparer.Compare(k1, k2)) view
+
+    Array.sortInPlaceWith
+      (fun (struct (k1, _)) (struct (k2, _)) -> keyComparer.Compare(k1, k2))
+      view
+
     Array.blit view 0 items 0 count
 
   /// The number of commands currently in the buffer.

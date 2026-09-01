@@ -743,6 +743,7 @@ module Layout =
     then
       let w = section.BackingGrid.Width
       let idx = gx + gy * w
+
       if section.BackingGrid.Cells.[idx].IsNone then
         section.BackingGrid.Cells.[idx] <- ValueSome content
 

@@ -8,6 +8,7 @@
         <!-- Web-first core: own vector types replace System.Numerics (which
              Fable cannot compile). Keep Vectors.fs first in compile order. -->
         <Compile Include="Vectors.fs" />
+        <Compile Include="Signals.fs" />
         <Compile Include="Collections.fs" />
         <Compile Include="Color.fs" />
         <Compile Include="Animation3D.fs" />
@@ -26,6 +27,7 @@
         <Compile Include="Elmish.Program.fs" />
         <Compile Include="Elmish.Loop.fs" />
         <Compile Include="Elmish.Headless.fs" />
+        <Compile Include="Signals.Headless.fs" />
         <Compile Include="Layout/Grid2D.fs" />
         <Compile Include="Layout/HexGrid.fs" />
         <Compile Include="Layout/Spatial2D.fs" />
@@ -56,6 +58,7 @@
         </PackageReference>
         <PackageReference Include="Fable.Core" />
         <PackageReference Include="Fable.Package.SDK" />
+        <PackageReference Include="Fable.Promise" />
         <PackageReference Include="FSharp.UMX" />
     </ItemGroup>
 </Project>

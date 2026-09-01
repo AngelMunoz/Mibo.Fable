@@ -1020,6 +1020,7 @@ module HexLayout3D =
       let gw = section.BackingGrid.Width
       let gd = section.BackingGrid.Depth
       let idx = gl * gw * gd + gr * gw + gc
+
       if section.BackingGrid.Cells.[idx].IsNone then
         section.BackingGrid.Cells.[idx] <- ValueSome content
 
