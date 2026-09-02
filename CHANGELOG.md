@@ -10,6 +10,7 @@
 - **MVU runtime:** Long-running work no longer blocks the frame. `Cmd.ofPromise` joins `Cmd.ofAsync` and `Cmd.ofTask`, mapping a promise's result — or its error — to a message on a later frame.
 - **Demo:** One bouncing-ball simulation runs under both execution models side by side, with a shared renderer. Each canvas accepts clicks to kick its ball.
 - **Tests:** `pnpm test` runs a smoke suite covering both runtimes — step ordering, memoized projections that recompute only when their inputs change, journal/delta delivery, transaction netting, posts, and fixed-step caps. QUnit-based suites run under Node with the qunit CLI.
+- **JS and TS output:** Every public module compiles to its own JavaScript and TypeScript file with stable, bare export names (`ASet.empty`, `Sub.batch`, `CVal.create`) and no generated name suffixes on the public surface, so bundlers tree-shake per family and imports read the same as the F# API.
 
 ## [0.0.1] - 2026-09-01
 
