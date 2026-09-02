@@ -82,46 +82,6 @@ type PointLight3D = {
   ShadowBias: float32 voption
 }
 
-/// <summary>Convenience builders for <see cref="T:Mibo.Elmish.Graphics3D.AmbientLight3D"/>.</summary>
-module AmbientLight3D =
-
-  /// <summary>Creates an ambient light. Defaults: Intensity=1.</summary>
-  val create: color: Color -> AmbientLight3D
-
-  val inline withIntensity: v: float32 -> l: AmbientLight3D -> AmbientLight3D
-
-/// <summary>Convenience builders for <see cref="T:Mibo.Elmish.Graphics3D.DirectionalLight3D"/>.</summary>
-module DirectionalLight3D =
-
-  /// <summary>Creates a directional light. Defaults: Color=White, Intensity=1, CastsShadows=true.</summary>
-  val create: direction: Vector3 -> DirectionalLight3D
-
-  val inline withColor: v: Color -> l: DirectionalLight3D -> DirectionalLight3D
-
-  val inline withIntensity:
-    v: float32 -> l: DirectionalLight3D -> DirectionalLight3D
-
-  val inline withCastsShadows:
-    v: bool -> l: DirectionalLight3D -> DirectionalLight3D
-
-/// <summary>Convenience builders for <see cref="T:Mibo.Elmish.Graphics3D.PointLight3D"/>.</summary>
-module PointLight3D =
-
-  /// <summary>Creates a point light. Defaults: Color=White, Intensity=1, Falloff=2, CastsShadows=false, ShadowBias=None.</summary>
-  val create: position: Vector3 * radius: float32 -> PointLight3D
-
-  val inline withColor: v: Color -> l: PointLight3D -> PointLight3D
-
-  val inline withIntensity: v: float32 -> l: PointLight3D -> PointLight3D
-
-  val inline withFalloff: v: float32 -> l: PointLight3D -> PointLight3D
-
-  val inline withCastsShadows: v: bool -> l: PointLight3D -> PointLight3D
-
-  val inline withShadowDirection: v: Vector3 -> l: PointLight3D -> PointLight3D
-
-  val inline withShadowBias: v: float32 -> l: PointLight3D -> PointLight3D
-
 /// <summary>Spot light configuration for cone-shaped lights with distance attenuation.</summary>
 [<Struct>]
 type SpotLight3D = {
@@ -158,21 +118,3 @@ type SpotLight3D = {
   /// </remarks>
   ShadowBias: float32 voption
 }
-
-/// <summary>Convenience builders for <see cref="T:Mibo.Elmish.Graphics3D.SpotLight3D"/>.</summary>
-module SpotLight3D =
-
-  /// <summary>Creates a spot light. Defaults: Color=White, Intensity=1, InnerCutoff=0.5, OuterCutoff=0.7, CastsShadows=false, ShadowBias=None.</summary>
-  val create:
-    position: Vector3 * direction: Vector3 * radius: float32 -> SpotLight3D
-
-  val inline withColor: v: Color -> l: SpotLight3D -> SpotLight3D
-
-  val inline withIntensity: v: float32 -> l: SpotLight3D -> SpotLight3D
-
-  val inline withCutoff:
-    inner: float32 -> outer: float32 -> l: SpotLight3D -> SpotLight3D
-
-  val inline withCastsShadows: v: bool -> l: SpotLight3D -> SpotLight3D
-
-  val inline withShadowBias: v: float32 -> l: SpotLight3D -> SpotLight3D

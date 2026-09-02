@@ -1,0 +1,43 @@
+module Mibo.Elmish.Graphics3D.SpotLight3D
+
+open Mibo.Vectors
+open Mibo
+
+/// <summary>Creates a spot light. Defaults: Color=White, Intensity=1, InnerCutoff=0.5, OuterCutoff=0.7, CastsShadows=false, ShadowBias=None.</summary>
+let create
+  (position: Vector3, direction: Vector3, radius: float32)
+  : SpotLight3D =
+  {
+    Position = position
+    Direction = direction
+    Color = Color.White
+    Intensity = 1.0f
+    Radius = radius
+    InnerCutoff = 0.5f
+    OuterCutoff = 0.7f
+    CastsShadows = false
+    ShadowBias = ValueNone
+  }
+
+let inline withColor (v: Color) (l: SpotLight3D) = { l with Color = v }
+
+let inline withIntensity (v: float32) (l: SpotLight3D) = {
+  l with
+      Intensity = v
+}
+
+let inline withCutoff (inner: float32) (outer: float32) (l: SpotLight3D) = {
+  l with
+      InnerCutoff = inner
+      OuterCutoff = outer
+}
+
+let inline withCastsShadows (v: bool) (l: SpotLight3D) = {
+  l with
+      CastsShadows = v
+}
+
+let inline withShadowBias (v: float32) (l: SpotLight3D) = {
+  l with
+      ShadowBias = ValueSome v
+}

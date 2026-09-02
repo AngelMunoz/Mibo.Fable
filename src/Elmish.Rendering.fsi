@@ -23,23 +23,6 @@ type GameContext =
   member WindowHeight: int
   member internal UpdateDimensions: w: int * h: int -> unit
 
-/// Functions for accessing and managing services in the GameContext.
-module GameContext =
-  val internal create: width: int * height: int -> GameContext
-  val inline internal register: svc: 'T -> ctx: GameContext -> unit
-  /// <summary>Attempts to get a registered service by type.</summary>
-  /// <returns><c>ValueSome</c> if the service is registered, <c>ValueNone</c> otherwise.</returns>
-  /// <remarks>
-  /// Registration and lookup both key on <c>typeof&lt;'T&gt;</c>, so the stored value
-  /// always has the requested type and an unbox is safe. A <c>:? 'T</c> test is
-  /// deliberately avoided: on JS, Fable cannot test against interface types
-  /// (the test would always be false and lookups would silently fail).
-  /// </remarks>
-  val inline tryGetService: ctx: GameContext -> 'T voption
-  /// <summary>Gets a registered service by type.</summary>
-  /// <exception cref="T:System.InvalidOperationException">Thrown when the service is not registered.</exception>
-  val inline getService: ctx: GameContext -> 'T
-
 /// <summary>
 /// Interface for renderers that draw the model state each frame.
 /// </summary>
