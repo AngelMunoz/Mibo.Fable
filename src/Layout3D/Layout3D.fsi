@@ -339,7 +339,7 @@ module Layout3D =
     d: int ->
     odd: 'T ->
     even: 'T ->
-    section: GridSection3D<'T> ->
+    section': GridSection3D<'T> ->
       GridSection3D<'T>
 
   val inline generateXZ:
@@ -393,7 +393,7 @@ module Layout3D =
     count: int ->
     seed: int ->
     [<InlineIfLambda>] stamp: (GridSection3D<'T> -> GridSection3D<'T>) ->
-    section: GridSection3D<'T> ->
+    section': GridSection3D<'T> ->
       GridSection3D<'T>
 
   val setIfEmpty:

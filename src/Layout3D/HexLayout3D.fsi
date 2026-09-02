@@ -313,7 +313,7 @@ module HexLayout3D =
     count: int ->
     seed: int ->
     [<InlineIfLambda>] stamp: (HexGrid3DSection<'T> -> HexGrid3DSection<'T>) ->
-    section: HexGrid3DSection<'T> ->
+    section': HexGrid3DSection<'T> ->
       HexGrid3DSection<'T>
 
   val setIfEmpty:
@@ -419,7 +419,7 @@ module HexLayout3D =
     d: int ->
     odd: 'T ->
     even: 'T ->
-    section: HexGrid3DSection<'T> ->
+    section': HexGrid3DSection<'T> ->
       HexGrid3DSection<'T>
 
   val border:

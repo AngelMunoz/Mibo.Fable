@@ -1,1 +1,0 @@
-module QUnit.Smoke

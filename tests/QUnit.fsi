@@ -42,17 +42,9 @@ type Assert =
   [<Emit("$0.notDeepEqual($1, $2, $3...)")>]
   abstract notDeepEqual: actual: obj * expected: obj * ?message: string -> unit
 
-  /// <summary>Fails the test when the callback does not throw.</summary>
+  /// <summary>Fails the test when the callback throws.</summary>
   [<Emit("$0.throws($1, $2...)")>]
   abstract throws: block: (unit -> unit) * ?expected: obj -> unit
-
-  /// <summary>Fails the test when the callback throws.</summary>
-  [<Emit("$0.doesNotThrow($1, $2...)")>]
-  abstract doesNotThrow: block: (unit -> unit) * ?expected: obj -> unit
-
-  /// <summary>Unconditionally fails the test.</summary>
-  [<Emit("$0.fail($1...)")>]
-  abstract fail: ?message: string -> unit
 
   /// <summary>Overrides the default assertion count for the current test.</summary>
   [<Emit("$0.expect($1)")>]
@@ -93,9 +85,17 @@ type QUnit =
   [<Emit("$0.todo($1, $2)")>]
   abstract todo: name: string * callback: (Assert -> unit) -> unit
 
-  /// <summary>Registers a test expected to fail.</summary>
-  [<Emit("$0.expectedToFail($1, $2)")>]
-  abstract expectedToFail: name: string * callback: (Assert -> unit) -> unit
+  /// <summary>Registers a focused test; all unfocused tests are skipped.</summary>
+  [<Emit("$0.only($1, $2)")>]
+  abstract only: name: string * callback: (Assert -> unit) -> unit
+
+  /// <summary>Resumes the runner after async setup. Call outside a test context.</summary>
+  [<Emit("$0.start($1...)")>]
+  abstract start: ?count: int -> unit
+
+  /// <summary>Starts the runner once the load hooks are in place.</summary>
+  [<Emit("$0.autostart()")>]
+  abstract autostart: unit -> unit
 
   /// <summary>Groups tests and registers module-level hooks.</summary>
   [<Emit("$0.module($1, $2)")>]

@@ -51,6 +51,10 @@
         <Compile Include="Signals.Collections.fs" />
         <Compile Include="Signals.Collections.Map.fsi" />
         <Compile Include="Signals.Collections.Map.fs" />
+        <Compile Include="Signals.Collections.Set.fsi" />
+        <Compile Include="Signals.Collections.Set.fs" />
+        <Compile Include="Signals.Collections.List.fsi" />
+        <Compile Include="Signals.Collections.List.fs" />
         <Compile Include="Signals.Headless.fsi" />
         <Compile Include="Signals.Headless.fs" />
         <Compile Include="Layout/Grid2D.fsi" />

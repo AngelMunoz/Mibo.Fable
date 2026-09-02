@@ -1,4 +1,4 @@
-module QUnit.Smoke
+module QUnit.Tests
 
 // Harness check for the QUnit bindings over the Mibo.Signals surface.
 // Run with: pnpm test:qunit
