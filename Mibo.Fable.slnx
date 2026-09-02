@@ -1,4 +1,11 @@
 <Solution>
-  <Project Path="demo/Demo.fsproj" />
-  <Project Path="src/Mibo.Fable.fsproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Mibo.Fable.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mibo.Fable.Tests.fsproj" />
+  </Folder>
+  <Folder Name="/demo/">
+    <Project Path="demo/Demo.fsproj" />
+  </Folder>
 </Solution>
