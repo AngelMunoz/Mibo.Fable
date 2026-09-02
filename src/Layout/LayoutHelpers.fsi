@@ -13,7 +13,7 @@ type GridSection2D<'T> = {
 
 [<AutoOpen>]
 module LayoutHelpers =
-  val createSection: grid: CellGrid2D<'T> -> GridSection2D<'T>
+  val inline createSection: grid: CellGrid2D<'T> -> GridSection2D<'T>
 
   val inline setLocal:
     lx: int -> ly: int -> content: 'T -> section: GridSection2D<'T> -> unit

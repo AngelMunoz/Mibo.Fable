@@ -13,7 +13,7 @@ type HexGridSection<'T> = {
 
 [<AutoOpen>]
 module HexLayoutHelpers =
-  val createHexSection: grid: HexGrid<'T> -> HexGridSection<'T>
+  val inline createHexSection: grid: HexGrid<'T> -> HexGridSection<'T>
 
   val inline setHexLocal:
     lc: int -> lr: int -> content: 'T -> section: HexGridSection<'T> -> unit

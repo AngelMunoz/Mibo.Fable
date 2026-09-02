@@ -15,7 +15,7 @@ type HexGrid3DSection<'T> = {
 
 [<AutoOpen>]
 module HexLayout3DHelpers =
-  val createHex3DSection: grid: HexGrid3D<'T> -> HexGrid3DSection<'T>
+  val inline createHex3DSection: grid: HexGrid3D<'T> -> HexGrid3DSection<'T>
 
   val inline setHex3DLocal:
     lc: int ->

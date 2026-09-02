@@ -15,7 +15,7 @@ type HexGrid3DSection<'T> = {
 
 [<AutoOpen>]
 module HexLayout3DHelpers =
-  let createHex3DSection(grid: HexGrid3D<'T>) : HexGrid3DSection<'T> = {
+  let inline createHex3DSection(grid: HexGrid3D<'T>) : HexGrid3DSection<'T> = {
     BackingGrid = grid
     OffsetCol = 0
     OffsetRow = 0

@@ -23,7 +23,7 @@ module HexGrid =
   val inline hexDimensions:
     size: float32 -> orientation: HexOrientation -> struct (float32 * float32)
 
-  val create:
+  val inline create:
     width: int ->
     height: int ->
     size: float32 ->

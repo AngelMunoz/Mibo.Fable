@@ -13,7 +13,7 @@ type HexGridSection<'T> = {
 
 [<AutoOpen>]
 module HexLayoutHelpers =
-  let createHexSection(grid: HexGrid<'T>) : HexGridSection<'T> = {
+  let inline createHexSection(grid: HexGrid<'T>) : HexGridSection<'T> = {
     BackingGrid = grid
     OffsetCol = 0
     OffsetRow = 0

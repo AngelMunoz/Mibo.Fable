@@ -26,7 +26,7 @@ module HexGrid =
     | PointyTop -> struct (size * sqrt 3f, size * 2f)
     | FlatTop -> struct (size * 2f, size * sqrt 3f)
 
-  let create
+  let inline create
     width
     height
     (size: float32)

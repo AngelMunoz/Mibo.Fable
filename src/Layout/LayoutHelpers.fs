@@ -13,7 +13,7 @@ type GridSection2D<'T> = {
 
 [<AutoOpen>]
 module LayoutHelpers =
-  let createSection(grid: CellGrid2D<'T>) : GridSection2D<'T> = {
+  let inline createSection(grid: CellGrid2D<'T>) : GridSection2D<'T> = {
     BackingGrid = grid
     OffsetX = 0
     OffsetY = 0
