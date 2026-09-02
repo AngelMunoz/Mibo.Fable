@@ -115,8 +115,12 @@
         <Compile Include="Elmish.Commands.fs" />
         <Compile Include="Elmish.System.fsi" />
         <Compile Include="Elmish.System.fs" />
+        <Compile Include="Elmish/SubId.fsi" />
+        <Compile Include="Elmish/SubId.fs" />
         <Compile Include="Elmish.Subscriptions.fsi" />
         <Compile Include="Elmish.Subscriptions.fs" />
+        <Compile Include="Elmish/Sub.fsi" />
+        <Compile Include="Elmish/Sub.fs" />
         <Compile Include="Elmish.Rendering.fsi" />
         <Compile Include="Elmish.Rendering.fs" />
         <Compile Include="GameContext.fsi" />

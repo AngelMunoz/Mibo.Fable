@@ -22,4 +22,6 @@ val create:
     LayeredGrid3D<'T>
 
 val getOrAddLayer:
-  index: int -> grid: LayeredGrid3D<'T> -> struct (CellGrid3D<'T> * LayeredGrid3D<'T>)
+  index: int ->
+  grid: LayeredGrid3D<'T> ->
+    struct (CellGrid3D<'T> * LayeredGrid3D<'T>)
