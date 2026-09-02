@@ -163,6 +163,10 @@
         <Compile Include="Elmish.Loop.fs" />
         <Compile Include="Elmish.Headless.fsi" />
         <Compile Include="Elmish.Headless.fs" />
+        <Compile Include="Elmish/HeadlessProgram.fsi" />
+        <Compile Include="Elmish/HeadlessProgram.fs" />
+        <Compile Include="Elmish/HeadlessRunner.fsi" />
+        <Compile Include="Elmish/HeadlessRunner.fs" />
         <Compile Include="Adaptive.Headless.fsi" />
         <Compile Include="Adaptive.Headless.fs" />
         <Compile Include="Adaptive/AdaptiveInit.fsi" />
