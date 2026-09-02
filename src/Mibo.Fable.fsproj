@@ -133,6 +133,10 @@
         <Compile Include="Assets.fs" />
         <Compile Include="Input.fsi" />
         <Compile Include="Input.fs" />
+        <Compile Include="InputMap.fsi" />
+        <Compile Include="InputMap.fs" />
+        <Compile Include="ActionState.fsi" />
+        <Compile Include="ActionState.fs" />
         <Compile Include="InputMapper.fsi" />
         <Compile Include="InputMapper.fs" />
         <Compile Include="InputServices/Input.fsi" />
