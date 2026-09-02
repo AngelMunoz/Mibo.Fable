@@ -51,6 +51,10 @@
         <Compile Include="Color.fs" />
         <Compile Include="Animation3D.fsi" />
         <Compile Include="Animation3D.fs" />
+        <Compile Include="Animation3DClipsInfo.fsi" />
+        <Compile Include="Animation3DClipsInfo.fs" />
+        <Compile Include="Animation3DState.fsi" />
+        <Compile Include="Animation3DState.fs" />
         <Compile Include="Elmish.Time.fsi" />
         <Compile Include="Elmish.Time.fs" />
         <Compile Include="Elmish.Commands.fsi" />
