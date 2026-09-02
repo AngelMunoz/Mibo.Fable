@@ -47,6 +47,10 @@
         <Compile Include="Elmish.Loop.fs" />
         <Compile Include="Elmish.Headless.fsi" />
         <Compile Include="Elmish.Headless.fs" />
+        <Compile Include="Signals.Collections.fsi" />
+        <Compile Include="Signals.Collections.fs" />
+        <Compile Include="Signals.Collections.Map.fsi" />
+        <Compile Include="Signals.Collections.Map.fs" />
         <Compile Include="Signals.Headless.fsi" />
         <Compile Include="Signals.Headless.fs" />
         <Compile Include="Layout/Grid2D.fsi" />

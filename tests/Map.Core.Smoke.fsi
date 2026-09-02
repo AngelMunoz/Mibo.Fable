@@ -1,0 +1,1 @@
+module Map.Core.Smoke
