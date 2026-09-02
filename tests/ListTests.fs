@@ -1,214 +1,362 @@
-module ListTests
+module List.Tests
 
-// AList/CList contracts against Mibo.Adaptive's public AList/CList surface:
-// stable-id element cells, positional writes, perform/custom batches.
+// Semantic tests for the ported adaptive lists: positional translation,
+// incremental recomputation, refcounts on toASet, reduce/fold with rebuild
+// fallback, transactions, posts.
+//
+// Content assertions compare comma-joined strings: typed arrays and F#
+// lists serialize differently under deepEqual on JS.
 
+open System
+open System.Collections.Generic
+open Fable.Core
+open Mibo.Fable.Adaptive
 open Mibo.Testing.QUnit
-open Mibo.Signals
 
-let contents(items: int array) : string =
-  items |> Array.map(string) |> String.concat ","
+let private showItems(l: alist<int>) : string = String.Join(",", AList.force l)
 
-QUnit.module'("CList writes", ignore)
+let private showPairs(l: alist<struct (int * int)>) : string =
+  l
+  |> AList.force
+  |> Seq.map(fun struct (a, b) -> sprintf "%d-%d" a b)
+  |> String.concat ","
 
-QUnit.test(
-  "append, prepend and insertAt place elements at the right positions",
-  fun assert' ->
-    let items = CList.empty<int>
-    CList.append 2 items
-    CList.prepend 1 items
-    CList.insertAt 1 99 items
-    assert'.strictEqual(contents(CList.force items), "1,99,2")
-)
+let private showMap(map: Dictionary<int, int>) : string =
+  map
+  |> Seq.map(fun kv -> sprintf "%d=%d" kv.Key kv.Value)
+  |> Seq.sort
+  |> String.concat ","
 
-QUnit.test(
-  "updateAt writes one position, removeAt drops it",
-  fun assert' ->
-    let items = CList.ofSeq [ 1; 2; 3 ]
-    CList.updateAt 1 20 items
-    assert'.strictEqual(contents(CList.force items), "1,20,3")
-
-    assert'.throws((fun () -> CList.updateAt 7 20 items), "out of range raises")
-
-    CList.removeAt 0 items
-    assert'.strictEqual(contents(CList.force items), "20,3")
-)
+let private has(list: 'T array, item: 'T) =
+  Array.exists (fun x -> x = item) list
 
 QUnit.test(
-  "set replaces the whole content; updateTo skips equal targets",
+  "AList reads, count, isEmpty, positional lookups",
   fun assert' ->
-    let items = CList.ofSeq [ 1; 2 ]
-    CList.set [ 9; 8; 7 ] items
-    assert'.strictEqual(contents(CList.force items), "9,8,7")
-    assert'.strictEqual(CList.updateTo [| 9; 8; 7 |] items, false)
-    assert'.strictEqual(CList.updateTo [| 9 |] items, true)
-)
+    let l = CList.ofSeq [ 10; 20; 30 ] |> CList.value
 
-QUnit.test(
-  "remove drops the first match; postSet replaces at the boundary",
-  fun assert' ->
-    let items = CList.ofSeq [ "a"; "b"; "a" ]
-    CList.remove "a" items
-    assert'.strictEqual(Array.length(CList.force items), 2)
-    CList.remove "zz" items
-    assert'.strictEqual(Array.length(CList.force items), 2, "absent is a no-op")
-    CList.postSet [ "x" ] items
-    assert'.strictEqual(Array.length(CList.force items), 1, "replace wins")
-    CList.postClear items
-    assert'.strictEqual(Array.length(CList.force items), 0, "clear wins")
-)
+    assert'.equal(showItems l, "10,20,30", "force materializes")
+    assert'.equal(AList.count l |> AVal.force, 3, "count")
+    assert'.equal(AList.isEmpty l |> AVal.force, false, "isEmpty")
+    assert'.equal(AList.tryAt 1 l |> AVal.force, ValueSome 20, "tryAt middle")
 
-QUnit.test(
-  "perform applies builder operations with per-op positions",
-  fun assert' ->
-    let items = CList.ofSeq [ 1; 2 ]
-    let delta = ListDeltaBuilder<int>()
-    delta.Insert(2, 3) // [1; 2; 3]
-    delta.Update(0, 10) // [10; 2; 3]
-    delta.Remove(1) // [10; 3]
-    CList.perform delta items
-    assert'.strictEqual(contents(CList.force items), "10,3")
-)
-
-QUnit.module'("AList reads", ignore)
-
-QUnit.test(
-  "tryAt reads by position and shifts with insertions",
-  fun assert' ->
-    let items = CList.ofSeq [ "a"; "b" ]
-    let view = CList.value items
-    assert'.strictEqual(AVal.get(AList.tryAt 0 view), ValueSome "a")
-    CList.prepend "z" items
-
-    assert'.strictEqual(
-      AVal.get(AList.tryAt 0 view),
-      ValueSome "z",
-      "insert shifts"
+    assert'.equal(
+      AList.tryAt 9 l |> AVal.force,
+      ValueNone,
+      "tryAt out of range"
     )
 
-    assert'.strictEqual(AVal.get(AList.tryAt 2 view), ValueSome "b")
-    assert'.strictEqual(AVal.get(AList.tryAt 5 view), ValueNone)
+    assert'.equal(AList.tryFirst l |> AVal.force, ValueSome 10, "tryFirst")
+    assert'.equal(AList.tryLast l |> AVal.force, ValueSome 30, "tryLast")
 )
 
 QUnit.test(
-  "count follows structure; force materializes a retained snapshot",
+  "AList.map translates positions incrementally",
   fun assert' ->
-    let items = CList.ofSeq [ 1; 2 ]
-    let view = CList.value items
-    let n = AList.count view
-    assert'.strictEqual(AVal.get n, 2)
-    let snapshot = AList.force view
-    CList.append 3 items
-    assert'.strictEqual(contents(snapshot), "1,2", "snapshot is retained data")
-    assert'.strictEqual(AVal.get n, 3)
+    let src = CList.ofSeq [ 1; 2; 3 ]
+    let mutable mapped = 0
 
-    assert'.throws(
-      (fun () -> Collections.batch(fun () -> AList.force view |> ignore)),
-      "pack inside a batch raises"
+    let derived =
+      src
+      |> CList.value
+      |> AList.map(fun x ->
+        mapped <- mapped + 1
+        x * 10)
+
+    assert'.equal(showItems derived, "10,20,30", "initial")
+
+    CList.append 4 src
+
+    assert'.equal(
+      showItems derived,
+      "10,20,30,40",
+      "append translated to the output"
+    )
+
+    assert'.equal(mapped, 4, "only the new element ran the mapping")
+
+    CList.prepend 0 src
+
+    assert'.equal(
+      showItems derived,
+      "0,10,20,30,40",
+      "prepend shifted the output"
+    )
+
+    assert'.equal(mapped, 5, "prepend mapped only the new element")
+)
+
+QUnit.test(
+  "AList.filter/choose/mapi/indexed",
+  fun assert' ->
+    let l = CList.ofSeq [ 1; 2; 3; 4 ] |> CList.value
+
+    let evens = AList.filter (fun x -> x % 2 = 0) l |> AList.force
+
+    assert'.equal(String.Join(",", evens), "2,4", "filter")
+
+    let picked =
+      AList.choose (fun x -> if x > 2 then Some(x * 10) else None) l
+      |> AList.force
+
+    assert'.equal(String.Join(",", picked), "30,40", "choose")
+
+    let at = AList.mapi (fun i x -> i * 100 + x) l |> AList.force
+
+    assert'.equal(
+      String.Join(",", at),
+      "1,102,203,304",
+      "mapi sees input positions"
+    )
+
+    let indexed = AList.indexed l |> AList.force
+
+    assert'.equal(
+      String.Join(
+        ",",
+        indexed |> Seq.map(fun struct (i, v) -> sprintf "%d:%d" i v)
+      ),
+      "0:1,1:2,2:3,3:4",
+      "indexed pairs"
     )
 )
 
-QUnit.module'("stable ids", ignore)
+QUnit.test(
+  "AList rev/pairwise/sort/sub/take/skip",
+  fun assert' ->
+    let l = CList.ofSeq [ 1; 2; 3 ] |> CList.value
+
+    assert'.equal(showItems(AList.rev l), "3,2,1", "rev")
+    assert'.equal(showPairs(AList.pairwise l), "1-2,2-3", "pairwise")
+
+    let shuffled = CList.ofSeq [ 3; 1; 2 ] |> CList.value
+
+    assert'.equal(showItems(AList.sort shuffled), "1,2,3", "sort")
+    assert'.equal(showItems(AList.sub 1 2 l), "2,3", "sub window")
+    assert'.equal(showItems(AList.take 2 l), "1,2", "take")
+    assert'.equal(showItems(AList.skip 1 l), "2,3", "skip")
+)
 
 QUnit.test(
-  "insertions never recompute existing mapped elements",
+  "AList.append concatenates with cross-source order",
   fun assert' ->
-    let items = CList.ofSeq [ "a"; "b" ]
-    let evaluations = ResizeArray<string>()
+    let left = CList.ofSeq [ 1; 2 ]
+    let right = CList.ofSeq [ 3; 4 ]
 
-    let mapped =
-      AList.map
-        (fun v ->
-          evaluations.Add v
-          v + "!")
-        (CList.value items)
+    let combined = AList.append (CList.value left) (CList.value right)
 
-    assert'.strictEqual(Array.length(AList.force mapped), 2)
-    let afterBuild = evaluations.Count
-    CList.prepend "z" items
-    assert'.strictEqual(Array.length(AList.force mapped), 3)
+    assert'.equal(showItems combined, "1,2,3,4", "initial")
 
-    assert'.strictEqual(
-      evaluations.Count - afterBuild,
+    CList.prepend 0 left
+
+    assert'.equal(
+      showItems combined,
+      "0,1,2,3,4",
+      "left prepend shifts everything"
+    )
+
+    CList.insertAt 1 99 right
+
+    assert'.equal(
+      showItems combined,
+      "0,1,2,3,99,4",
+      "right insert lands at its absolute position"
+    )
+)
+
+QUnit.test(
+  "AList.toASet dedups with refcounts",
+  fun assert' ->
+    let src = CList.ofSeq [ 1; 2; 1 ]
+
+    let dedup = AList.toASet(CList.value src)
+
+    assert'.equal(ASet.count dedup |> AVal.force, 2, "duplicates collapse")
+
+    CList.remove 1 src
+
+    assert'.equal(
+      ASet.count dedup |> AVal.force,
+      2,
+      "first occurrence leaves, 1 survives"
+    )
+
+    CList.remove 1 src
+
+    assert'.equal(
+      ASet.count dedup |> AVal.force,
       1,
-      "only the new element maps; existing ids keep their cells"
-    )
-
-    assert'.strictEqual(
-      String.concat "," (Array.map string (AList.force mapped)),
-      "z!,a!,b!"
+      "last occurrence drops the element"
     )
 )
 
-QUnit.module'("AList custom", ignore)
+QUnit.test(
+  "AList.ofAVal emits the positional diff",
+  fun assert' ->
+    let value = CVal.create [ 1; 2; 3 ]
+    let derived = AList.ofAVal(CVal.value value)
+
+    assert'.equal(showItems derived, "1,2,3", "initial")
+
+    CVal.set [ 1; 3 ] value
+
+    assert'.equal(showItems derived, "1,3", "middle removed in place")
+
+    CVal.set [ 9; 1; 3 ] value
+
+    assert'.equal(showItems derived, "9,1,3", "prepend diff")
+)
 
 QUnit.test(
-  "custom applies delta-builder operations to the stable ids",
+  "AList.bind rebuilds on the value or the inner list",
   fun assert' ->
-    // One queued insert per read: the compute consumes its own events.
-    let events = ResizeArray([ 1; 2 ])
-    let sizes = ResizeArray<int>()
+    let selected = CVal.create 0
+    let a = CList.ofSeq [ 1; 2 ]
+    let b = CList.ofSeq [ 7 ]
 
-    let view =
-      AList.custom(fun (current: int array) (builder: ListDeltaBuilder<int>) ->
-        sizes.Add(current.Length)
+    let visible =
+      AList.bind
+        (fun i -> if i = 0 then CList.value a else CList.value b)
+        (CVal.value selected)
 
-        if events.Count > 0 then
-          let v = events.[0]
-          events.RemoveAt(0)
-          builder.Insert(current.Length, v))
+    assert'.equal(showItems visible, "1,2", "bound to a")
 
-    assert'.strictEqual(contents(AList.force view), "1")
-    assert'.strictEqual(contents(AList.force view), "1,2")
+    CVal.set 1 selected
 
-    assert'.strictEqual(
-      contents(AList.force view),
-      "1,2",
-      "no events, no change"
+    assert'.equal(showItems visible, "7", "swapped to b")
+
+    CList.append 8 b
+
+    assert'.equal(showItems visible, "7,8", "inner change propagates")
+)
+
+QUnit.test(
+  "AList.reduce maintains state per delta with recompute fallback",
+  fun assert' ->
+    let src = CList.ofSeq [ 1; 2; 3 ]
+    let sum = AList.sum(CList.value src)
+
+    assert'.equal(AVal.force sum, 6, "initial sum")
+
+    CList.append 4 src
+    assert'.equal(AVal.force sum, 10, "append adds incrementally")
+
+    CList.removeAt 0 src
+    assert'.equal(AVal.force sum, 9, "remove subtracts (group sum inverts)")
+
+    // fold recomputes on every removal (non-invertible).
+    let chars = CList.ofSeq [ "a"; "b" ]
+    let concatenated = AList.fold (fun acc x -> acc + x) "" (CList.value chars)
+
+    assert'.equal(AVal.force concatenated, "ab", "fold")
+    CList.append "c" chars
+    assert'.equal(AVal.force concatenated, "abc", "fold adds incrementally")
+    CList.removeAt 0 chars
+
+    assert'.equal(
+      AVal.force concatenated,
+      "bc",
+      "fold recomputed after the removal"
+    )
+)
+
+QUnit.test(
+  "CList transactions replay in order; appends keep write order",
+  fun assert' ->
+    let src = CList.ofSeq [ 1; 2; 3 ]
+    let mutable recomputeCount = 0
+
+    let derived =
+      src
+      |> CList.value
+      |> AList.count
+      |> AVal.map(fun c ->
+        recomputeCount <- recomputeCount + 1
+        c)
+
+    AVal.force derived |> ignore
+    let baseline = recomputeCount
+
+    Transaction.run(fun () ->
+      CList.append 4 src
+      CList.append 5 src
+      CList.removeAt 0 src
+      CList.insertAt 0 0 src)
+
+    AVal.force derived |> ignore
+
+    // Replay: [1,2,3] +4 +5 -> [1,2,3,4,5]; removeAt 0 -> [2,3,4,5];
+    // insertAt 0 0 -> [0,2,3,4,5]. One batch, one delta.
+    assert'.equal(
+      String.Join(",", src |> CList.force),
+      "0,2,3,4,5",
+      "transaction replayed in order"
     )
 
-    assert'.strictEqual(sizes.[0], 0)
-    assert'.strictEqual(sizes.[1], 1)
-)
-
-QUnit.module'("AList derivations", ignore)
-
-QUnit.test(
-  "positional derivations re-derive on structural change",
-  fun assert' ->
-    let items = CList.ofSeq [ 3; 1; 2 ]
-    let view = CList.value items
-    assert'.strictEqual(contents(AList.force(AList.sort view)), "1,2,3")
-    assert'.strictEqual(contents(AList.force(AList.rev view)), "2,1,3")
-    assert'.strictEqual(contents(AList.force(AList.take 2 view)), "3,1")
-    assert'.strictEqual(contents(AList.force(AList.skip 1 view)), "1,2")
-
-    CList.append 0 items
-    assert'.strictEqual(contents(AList.force(AList.sort view)), "0,1,2,3")
-
-    let pairs = AList.force(AList.pairwise view)
-    assert'.strictEqual(contents(pairs |> Array.map fst), "3,1,2")
+    assert'.equal(recomputeCount - baseline, 1, "one batch delta")
 )
 
 QUnit.test(
-  "append concatenates two lists; indexed maps positions",
+  "CList posts apply as one batch; appends resolve at apply time",
   fun assert' ->
-    let left = AList.ofSeq [ 1; 2 ]
-    let right = AList.ofSeq [ 3 ]
-    assert'.strictEqual(contents(AList.force(AList.append left right)), "1,2,3")
+    let src = CList.ofSeq [ 1 ]
 
-    let items = CList.ofSeq [ "a"; "b" ]
-    let indexed = AList.toIndexedASet(CList.value items)
-    assert'.strictEqual(Map.count(AMap.force indexed), 2)
-    assert'.strictEqual(Map.find 1 (AMap.force indexed), "b")
+    CList.postAppend 2 src
+    CList.postAppend 3 src
+    CList.postPrepend 0 src
+
+    assert'.equal(
+      String.Join(",", src |> CList.force),
+      "0,1,2,3",
+      "posted appends land in write order after the prepend"
+    )
+
+    let derived = src |> CList.value |> AList.count
+    CList.postRemoveAt 0 src
+
+    assert'.equal(AVal.force derived, 3, "posted remove applies at the read")
 )
 
 QUnit.test(
-  "aggregates re-run on any write",
+  "CList perform applies a builder batch atomically",
   fun assert' ->
-    let items = CList.ofSeq [ 1.0; 2.0 ]
-    let total = AList.sum(CList.value items)
-    assert'.strictEqual(AVal.get total, 3.0)
-    CList.append 3.0 items
-    assert'.strictEqual(AVal.get total, 6.0)
+    let src = CList.ofSeq [ 1; 2; 3 ]
+    let builder = ListDeltaBuilder<int>()
+    builder.Remove(0)
+    builder.Insert(1, 9)
+
+    CList.perform builder src
+
+    assert'.equal(
+      String.Join(",", src |> CList.force),
+      "2,9,3",
+      "ops applied in order"
+    )
+)
+
+QUnit.test(
+  "SetToList/MapToAList/AMap.ofAList roundtrip conversions",
+  fun assert' ->
+    let s = CSet.ofSeq [ 3; 1; 2 ] |> CSet.value
+
+    let fromSet = AList.ofASet s
+
+    assert'.ok(has(AList.force fromSet, 3), "contains 3")
+    assert'.ok(has(AList.force fromSet, 1), "contains 1")
+    assert'.ok(has(AList.force fromSet, 2), "contains 2")
+    assert'.equal(AList.count fromSet |> AVal.force, 3, "same element count")
+
+    let m = CMap.ofSeq [ 1, 10; 2, 20 ] |> CMap.value
+
+    let entries = AMap.toAList m
+
+    assert'.equal(AList.count entries |> AVal.force, 2, "map entries as a list")
+
+    let backToMap = AMap.ofAList entries
+
+    assert'.equal(
+      showMap(AMap.force backToMap),
+      "1=10,2=20",
+      "ofAList roundtrip"
+    )
 )

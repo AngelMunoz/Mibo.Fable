@@ -1,16 +1,15 @@
-namespace Mibo.Signals
+namespace Mibo.Fable.Adaptive
 
 open System
 open Mibo.Elmish
 
-/// Deferred `unit -> unit` work — the counterpart of the .NET IntentQueue.
-/// Two lanes: boundary work runs at the start of the next Step (external
-/// events, next-frame work); after-update work runs right after each
-/// Update, before the frame is forced. Work posted during a drain runs in
-/// the same drain. `PostTask` covers the .NET postTask/postAsync: the
+/// Deferred `unit -> unit` work — the web counterpart of the .NET
+/// IntentQueue. Two lanes: boundary work runs at the start of the next Step
+/// (external events, next-frame work); after-update work runs right after
+/// each Update, before the frame is forced. Work posted during a drain runs
+/// in the same drain. `PostTask` covers the .NET postTask/postAsync: the
 /// work starts immediately (promise concurrency), and its completion
-/// re-enters through the after-update lane. True parallelism stays a
-/// worker concern — a CPU-heavy task still runs on this thread.
+/// re-enters through the after-update lane.
 type IntentQueue =
   new: unit -> IntentQueue
   /// Queues work for the next step's boundary, before Update.
@@ -21,10 +20,8 @@ type IntentQueue =
 
   /// Starts `work` immediately; when the promise settles, the completion
   /// runs at the next post drain (after Update, before the frame is
-  /// forced) — the counterpart of the .NET postTask/postAsync, whose
-  /// completion returns via post. Rejections route through `onError`;
-  /// without one, the error is rethrown at the drain so it is not
-  /// swallowed.
+  /// forced). Rejections route through `onError`; without one, the error
+  /// is rethrown at the drain so it is not swallowed.
   member PostTask:
     work: (unit -> Fable.Core.JS.Promise<'T>) *
     onDone: ('T -> unit) *
@@ -37,20 +34,20 @@ type IntentQueue =
 /// The Init-phase context: the framework-owned roots plus the intent queue.
 /// Work posted here runs at the startup drain, right after Init returns and
 /// before the first frame is forced — the counterpart of the MVU init Cmd.
-type SignalsFrameContext =
+type AdaptiveFrameContext =
   internal new:
     ctx: GameContext *
-    time: CVal<GameTime> *
-    exitRequested: CVal<bool> *
+    time: cval<GameTime> *
+    exitRequested: cval<bool> *
     intents: IntentQueue ->
-      SignalsFrameContext
+      AdaptiveFrameContext
 
   /// The framework-owned time root. The runner writes it at the start of
   /// every step (once per fixed sub-step); projections may depend on it.
-  member Time: CVal<GameTime>
+  member Time: cval<GameTime>
   /// Set to true to make the runner stop — the counterpart of
   /// `CVal.set true ctx.ExitRequested`.
-  member ExitRequested: CVal<bool>
+  member ExitRequested: cval<bool>
   /// The GameContext the runner owns: window dimensions and services.
   member Context: GameContext
   member WindowWidth: int
@@ -60,21 +57,21 @@ type SignalsFrameContext =
 
 /// The Update-phase context: everything Init received. The frame builder
 /// must not post: it runs after the post drain.
-type SignalsContext =
+type AdaptiveContext =
   internal new:
-    frameCtx: SignalsFrameContext * intents: IntentQueue -> SignalsContext
+    frameCtx: AdaptiveFrameContext * intents: IntentQueue -> AdaptiveContext
 
-  member Time: CVal<GameTime>
-  member ExitRequested: CVal<bool>
+  member Time: cval<GameTime>
+  member ExitRequested: cval<bool>
   member Context: GameContext
   member WindowWidth: int
   member WindowHeight: int
   member Intents: IntentQueue
 
-/// An adaptive-style init: the frame force plus disposables. Build the graph
+/// An adaptive init: the frame force plus disposables. Build the graph
 /// (roots and projections) in the program's Init and return the force that
 /// packs the readonly frame at the end of every step.
-type SignalsInit<'Frame> = {
+type AdaptiveInit<'Frame> = {
   /// Forces the frame's output projections (each recomputes at most once
   /// if a dependency moved this step) and packs them into 'Frame.
   FrameBuilder: unit -> 'Frame
@@ -83,26 +80,28 @@ type SignalsInit<'Frame> = {
   Disposables: IDisposable list
 }
 
-/// <summary>Helpers for building a <see cref="T:Mibo.Signals.SignalsInit`1"/>.</summary>
-module SignalsInit =
+/// <summary>Helpers for building a <see cref="T:Mibo.Fable.Adaptive.AdaptiveInit`1"/>.</summary>
+module AdaptiveInit =
 
   /// Creates an init from a frame builder - no disposables.
-  val ofFrameBuilder: frameBuilder: (unit -> 'Frame) -> SignalsInit<'Frame>
+  val ofFrameBuilder: frameBuilder: (unit -> 'Frame) -> AdaptiveInit<'Frame>
 
   /// Appends disposables released when the runner is disposed.
   val withDisposables:
     disposables: IDisposable list ->
-    init: SignalsInit<'Frame> ->
-      SignalsInit<'Frame>
+    init: AdaptiveInit<'Frame> ->
+      AdaptiveInit<'Frame>
 
   /// Adds a single disposable.
   val withDisposable:
-    disposable: IDisposable -> init: SignalsInit<'Frame> -> SignalsInit<'Frame>
+    disposable: IDisposable ->
+    init: AdaptiveInit<'Frame> ->
+      AdaptiveInit<'Frame>
 
 /// Fixed-step configuration: converts a variable frame delta into zero or
 /// more fixed-size steps per Step call. The frame is forced once at the end,
 /// so intermediate sub-steps are integrated but not observed.
-type SignalsFixedStepConfig = {
+type AdaptiveFixedStepConfig = {
   /// Fixed simulation step size in seconds (e.g. 1/60 = 0.0166667).
   StepSeconds: float32
 
@@ -114,55 +113,55 @@ type SignalsFixedStepConfig = {
   MaxFrameSeconds: float32 voption
 }
 
-/// A signals program: the complete description of a State · Projection ·
+/// An adaptive program: the complete description of a State · Projection ·
 /// Update · Force game. There is no 'Msg and no Cmd — handlers write roots
 /// directly and defer work through the context's Intents.
-type SignalsProgram<'Frame> = {
+type AdaptiveProgram<'Frame> = {
   /// Builds the graph (roots, projections) and returns the frame force.
-  Init: SignalsFrameContext -> SignalsInit<'Frame>
+  Init: AdaptiveFrameContext -> AdaptiveInit<'Frame>
 
   /// Per-frame phase: runs after the time root is written and before the
   /// frame is forced — reads projections, writes roots, posts intents.
   /// Under fixed-step it runs once per sub-step, each followed by the
   /// post drain.
-  Update: SignalsContext -> GameTime -> unit
+  Update: AdaptiveContext -> GameTime -> unit
 
   /// Observer factories receiving the forced frame each step.
   Observers: (unit -> IObserver<struct (GameContext * 'Frame * GameTime)>) list
 
   /// Optional framework-managed fixed-step configuration.
-  FixedStep: SignalsFixedStepConfig voption
+  FixedStep: AdaptiveFixedStepConfig voption
 }
 
 [<RequireQualifiedAccess>]
-module SignalsProgram =
-  /// Creates a signals program from an Init and an Update phase.
+module AdaptiveProgram =
+  /// Creates an adaptive program from an Init and an Update phase.
   val mkProgram:
-    init: (SignalsFrameContext -> SignalsInit<'Frame>) ->
-    update: (SignalsContext -> GameTime -> unit) ->
-      SignalsProgram<'Frame>
+    init: (AdaptiveFrameContext -> AdaptiveInit<'Frame>) ->
+    update: (AdaptiveContext -> GameTime -> unit) ->
+      AdaptiveProgram<'Frame>
 
   /// Adds an observer notified with the forced frame after every step.
   val withObserver:
     factory: (unit -> IObserver<struct (GameContext * 'Frame * GameTime)>) ->
-    program: SignalsProgram<'Frame> ->
-      SignalsProgram<'Frame>
+    program: AdaptiveProgram<'Frame> ->
+      AdaptiveProgram<'Frame>
 
   /// Enables framework-managed fixed-step sub-stepping.
   val withFixedStep:
-    cfg: SignalsFixedStepConfig ->
-    program: SignalsProgram<'Frame> ->
-      SignalsProgram<'Frame>
+    cfg: AdaptiveFixedStepConfig ->
+    program: AdaptiveProgram<'Frame> ->
+      AdaptiveProgram<'Frame>
 
-/// Runs a signals program with explicit frame stepping — the counterpart of
-/// AdaptiveHeadless. Same host surface as the MVU HeadlessRunner: Step,
-/// StepN, StepUntil, Dispose, ShouldQuit — but the program mutates signal
-/// roots instead of returning models, and observers receive the forced
-/// readonly frame.
-type SignalsHeadless<'Frame> =
+/// Runs an adaptive program with explicit frame stepping — the counterpart
+/// of Mibo.Core's AdaptiveHeadless. Same host surface as the MVU
+/// HeadlessRunner: Step, StepN, StepUntil, Dispose, ShouldQuit — but the
+/// program mutates adaptive roots instead of returning models, and observers
+/// receive the forced readonly frame.
+type AdaptiveHeadless<'Frame> =
   new:
-    program: SignalsProgram<'Frame> * ?width: int * ?height: int ->
-      SignalsHeadless<'Frame>
+    program: AdaptiveProgram<'Frame> * ?width: int * ?height: int ->
+      AdaptiveHeadless<'Frame>
 
   /// Whether an exit was requested.
   member ShouldQuit: bool

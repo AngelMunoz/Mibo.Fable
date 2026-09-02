@@ -1,14 +1,14 @@
 module Adaptive.Tests
 
 // Port of Mibo.Core.Tests/AdaptiveHeadlessTests.fs behaviors to the web
-// runner (SignalsHeadless). .NET-only behaviors (GC allocation budgets,
+// runner (AdaptiveHeadless). .NET-only behaviors (GC allocation budgets,
 // dedicated-thread Run/RunAsync) have no web counterpart and stay out.
 
 open System
 open Fable.Core
 open Mibo.Fable.Exports
 open Mibo.Testing.QUnit
-open Mibo.Signals
+open Mibo.Fable.Adaptive
 open Mibo.Elmish
 
 /// Builds a program with two independent roots and two counted projections.
@@ -34,10 +34,10 @@ let mkTestProgram() =
       vel
 
   let program =
-    SignalsProgram.mkProgram
+    AdaptiveProgram.mkProgram
       (fun _ctx ->
-        SignalsInit.ofFrameBuilder(fun () ->
-          struct (AVal.get posProj, AVal.get velProj)))
+        AdaptiveInit.ofFrameBuilder(fun () ->
+          struct (AVal.getValue posProj, AVal.getValue velProj)))
       (fun _ctx _gameTime -> ())
 
   struct (program,
@@ -48,12 +48,12 @@ let mkTestProgram() =
 
 /// A program whose frame is the time root's total time in seconds.
 let mkTimeProgram() =
-  SignalsProgram.mkProgram
+  AdaptiveProgram.mkProgram
     (fun ctx ->
       let totalSeconds =
         AVal.map (fun (gt: GameTime) -> gt.TotalTime.TotalSeconds) ctx.Time
 
-      SignalsInit.ofFrameBuilder(fun () -> AVal.get totalSeconds))
+      AdaptiveInit.ofFrameBuilder(fun () -> AVal.getValue totalSeconds))
     (fun _ctx _gameTime -> ())
 
 let ms(n: float) = TimeSpan.FromMilliseconds n
@@ -88,7 +88,7 @@ QUnit.test(
   "Step returns the forced frame with current root values",
   fun assert' ->
     let struct (program, pos, _vel, _, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     CVal.set 42.0 pos
     runner.Step(ms 16.0)
@@ -102,7 +102,7 @@ QUnit.test(
   "Many writes between steps settle to one recompute per force",
   fun assert' ->
     let struct (program, pos, _vel, posRecomputes, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     runner.Step(ms 16.0)
     let baseline = posRecomputes()
@@ -128,7 +128,7 @@ QUnit.test(
     let struct (program, pos, _vel, posRecomputes, velRecomputes) =
       mkTestProgram()
 
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     runner.Step(ms 16.0)
     let posBefore = posRecomputes()
@@ -156,7 +156,7 @@ QUnit.test(
     let struct (program, _pos, _vel, posRecomputes, velRecomputes) =
       mkTestProgram()
 
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     runner.Step(ms 16.0)
     let posBefore = posRecomputes()
@@ -181,7 +181,7 @@ QUnit.test(
 QUnit.test(
   "Time root advances with each step",
   fun assert' ->
-    use runner = new SignalsHeadless<float>(mkTimeProgram())
+    use runner = new AdaptiveHeadless<float>(mkTimeProgram())
 
     runner.Step(ms 100.0)
     runner.Step(ms 200.0)
@@ -201,7 +201,7 @@ QUnit.test(
 QUnit.test(
   "Negative delta is clamped to zero",
   fun assert' ->
-    use runner = new SignalsHeadless<float>(mkTimeProgram())
+    use runner = new AdaptiveHeadless<float>(mkTimeProgram())
 
     runner.Step(ms -16.0)
 
@@ -216,24 +216,24 @@ QUnit.test(
     let mutable observedFromTimeRoot = 0.0
 
     let program =
-      SignalsProgram.mkProgram
+      AdaptiveProgram.mkProgram
         (fun ctx ->
           let elapsed =
             AVal.map
               (fun (gt: GameTime) -> gt.ElapsedGameTime.TotalMilliseconds)
               ctx.Time
 
-          SignalsInit.ofFrameBuilder(fun () ->
-            observedFromTimeRoot <- AVal.get elapsed
-            AVal.get elapsed))
+          AdaptiveInit.ofFrameBuilder(fun () ->
+            observedFromTimeRoot <- AVal.getValue elapsed
+            AVal.getValue elapsed))
         (fun ctx gameTime ->
           updates <- updates + 1
           lastElapsed <- gameTime.ElapsedGameTime
 
-          let gt = CVal.get ctx.Time
+          let gt = ctx.Time.Value
           observedFromTimeRoot <- gt.ElapsedGameTime.TotalMilliseconds)
 
-    use runner = new SignalsHeadless<float>(program)
+    use runner = new AdaptiveHeadless<float>(program)
 
     runner.Step(ms 16.0)
     runner.Step(ms 33.0)
@@ -256,17 +256,17 @@ QUnit.test(
 QUnit.test(
   "ExitRequested stops the runner; post-quit Step is a no-op",
   fun assert' ->
-    let mutable exitCell = Unchecked.defaultof<CVal<bool>>
+    let mutable exitCell = Unchecked.defaultof<cval<bool>>
     let pos = CVal.create 0.0
 
     let program =
-      SignalsProgram.mkProgram
+      AdaptiveProgram.mkProgram
         (fun ctx ->
           exitCell <- ctx.ExitRequested
-          SignalsInit.ofFrameBuilder(fun () -> CVal.get pos))
+          AdaptiveInit.ofFrameBuilder(fun () -> pos.Value))
         (fun _ctx _gameTime -> ())
 
-    use runner = new SignalsHeadless<float>(program)
+    use runner = new AdaptiveHeadless<float>(program)
 
     CVal.set 5.0 pos
     runner.Step(ms 16.0)
@@ -297,7 +297,7 @@ QUnit.test(
   "StepN advances N frames",
   fun assert' ->
     let struct (program, pos, _vel, _, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     CVal.set 9.0 pos
     runner.StepN(5, ms 16.0)
@@ -311,7 +311,7 @@ QUnit.test(
   "StepN with count 0 leaves the graph untouched",
   fun assert' ->
     let struct (program, pos, _vel, posRecomputes, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     CVal.set 3.0 pos
     runner.StepN(0, ms 16.0)
@@ -325,7 +325,7 @@ QUnit.test(
   "StepUntil stops when the frame predicate is met",
   fun assert' ->
     let struct (program, pos, _vel, _, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     CVal.set 5.0 pos
     let met = runner.StepUntil((fun (struct (p, _)) -> p >= 5.0), ms 16.0, 10)
@@ -340,7 +340,7 @@ QUnit.test(
   "StepUntil returns false when maxFrames reached",
   fun assert' ->
     let struct (program, _pos, _vel, _, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     let met = runner.StepUntil((fun _ -> false), ms 16.0, 4)
 
@@ -356,22 +356,22 @@ QUnit.test(
     let counter = CVal.create 0
 
     let program =
-      SignalsProgram.mkProgram
-        (fun _ctx -> SignalsInit.ofFrameBuilder(fun () -> CVal.get counter))
+      AdaptiveProgram.mkProgram
+        (fun _ctx -> AdaptiveInit.ofFrameBuilder(fun () -> counter.Value))
         (fun _ctx gameTime ->
           updateCount <- updateCount + 1
 
           observedElapsed <-
             observedElapsed + gameTime.ElapsedGameTime.TotalSeconds
 
-          CVal.set (CVal.get counter + 1) counter)
-      |> SignalsProgram.withFixedStep {
+          CVal.set (counter.Value + 1) counter)
+      |> AdaptiveProgram.withFixedStep {
         StepSeconds = 0.01f
         MaxStepsPerFrame = 5
         MaxFrameSeconds = ValueNone
       }
 
-    use runner = new SignalsHeadless<int>(program)
+    use runner = new AdaptiveHeadless<int>(program)
     runner.Step(ms 50.0)
 
     assert'.strictEqual(updateCount, 5, "Update runs once per sub-step")
@@ -390,18 +390,18 @@ QUnit.test(
     let counter = CVal.create 0
 
     let program =
-      SignalsProgram.mkProgram
-        (fun _ctx -> SignalsInit.ofFrameBuilder(fun () -> CVal.get counter))
+      AdaptiveProgram.mkProgram
+        (fun _ctx -> AdaptiveInit.ofFrameBuilder(fun () -> counter.Value))
         (fun _ctx _gameTime ->
           updateCount <- updateCount + 1
-          CVal.set (CVal.get counter + 1) counter)
-      |> SignalsProgram.withFixedStep {
+          CVal.set (counter.Value + 1) counter)
+      |> AdaptiveProgram.withFixedStep {
         StepSeconds = 0.01f
         MaxStepsPerFrame = 3
         MaxFrameSeconds = ValueNone
       }
 
-    use runner = new SignalsHeadless<int>(program)
+    use runner = new AdaptiveHeadless<int>(program)
     runner.Step(ms 50.0)
 
     assert'.strictEqual(updateCount, 3, "Update is capped at MaxStepsPerFrame")
@@ -415,18 +415,18 @@ QUnit.test(
     let counter = CVal.create 0
 
     let program =
-      SignalsProgram.mkProgram
-        (fun _ctx -> SignalsInit.ofFrameBuilder(fun () -> CVal.get counter))
+      AdaptiveProgram.mkProgram
+        (fun _ctx -> AdaptiveInit.ofFrameBuilder(fun () -> counter.Value))
         (fun _ctx _gameTime ->
           updateCount <- updateCount + 1
-          CVal.set (CVal.get counter + 1) counter)
-      |> SignalsProgram.withFixedStep {
+          CVal.set (counter.Value + 1) counter)
+      |> AdaptiveProgram.withFixedStep {
         StepSeconds = 0.05f
         MaxStepsPerFrame = 5
         MaxFrameSeconds = ValueNone
       }
 
-    use runner = new SignalsHeadless<int>(program)
+    use runner = new AdaptiveHeadless<int>(program)
     runner.Step(ms 10.0)
 
     assert'.strictEqual(updateCount, 0, "No sub-step below one step delta")
@@ -437,10 +437,10 @@ QUnit.test(
   "withFixedStep rejects non-positive StepSeconds",
   fun assert' ->
     assert'.throws(fun () ->
-      SignalsProgram.mkProgram
-        (fun _ctx -> SignalsInit.ofFrameBuilder(fun () -> 0.0))
+      AdaptiveProgram.mkProgram
+        (fun _ctx -> AdaptiveInit.ofFrameBuilder(fun () -> 0.0))
         (fun _ctx _gameTime -> ())
-      |> SignalsProgram.withFixedStep {
+      |> AdaptiveProgram.withFixedStep {
         StepSeconds = 0.0f
         MaxStepsPerFrame = 5
         MaxFrameSeconds = ValueNone
@@ -455,16 +455,16 @@ QUnit.test(
     let counter = CVal.create 0
 
     let program =
-      SignalsProgram.mkProgram
+      AdaptiveProgram.mkProgram
         (fun ctx ->
           ctx.Intents.PostNextFrame(fun () ->
             runs <- runs + 1
             CVal.set 7 counter)
 
-          SignalsInit.ofFrameBuilder(fun () -> CVal.get counter))
+          AdaptiveInit.ofFrameBuilder(fun () -> counter.Value))
         (fun _ctx _gameTime -> ())
 
-    use runner = new SignalsHeadless<int>(program)
+    use runner = new AdaptiveHeadless<int>(program)
     runner.Step(ms 16.0)
 
     assert'.strictEqual(runs, 1, "Init intent ran once at the first boundary")
@@ -477,7 +477,7 @@ QUnit.test(
   "Observer receives one notification per step",
   fun assert' ->
     let struct (program, _pos, _vel, _, _) = mkTestProgram()
-    use runner = new SignalsHeadless<struct (float * float)>(program)
+    use runner = new AdaptiveHeadless<struct (float * float)>(program)
 
     let mutable observed = 0
 
@@ -493,11 +493,11 @@ QUnit.testAsync(
     let counter = CVal.create 0
 
     let program =
-      SignalsProgram.mkProgram
-        (fun _ctx -> SignalsInit.ofFrameBuilder(fun () -> CVal.get counter))
+      AdaptiveProgram.mkProgram
+        (fun _ctx -> AdaptiveInit.ofFrameBuilder(fun () -> counter.Value))
         (fun _ctx _gameTime -> ())
 
-    use runner = new SignalsHeadless<int>(program)
+    use runner = new AdaptiveHeadless<int>(program)
     runner.Step(ms 16.0)
 
     let taskResult = CVal.create 0
@@ -509,18 +509,14 @@ QUnit.testAsync(
 
     runner.Step(ms 16.0)
 
-    assert'.strictEqual(
-      CVal.get taskResult,
-      0,
-      "Pending task applied nothing yet"
-    )
+    assert'.strictEqual(taskResult.Value, 0, "Pending task applied nothing yet")
 
     Promise.sleep 20
     |> Promise.tap(fun () ->
       runner.Step(ms 16.0)
 
       assert'.strictEqual(
-        CVal.get taskResult,
+        taskResult.Value,
         7,
         "Completion applied at the post drain"
       ))

@@ -1,11 +1,11 @@
 module QUnit.Tests
 
-// Harness check for the QUnit bindings over the Mibo.Signals surface.
+// Harness check for the QUnit bindings over the adaptive surface.
 // Run with: pnpm test:qunit
 
 open Fable.Core
 open Mibo.Testing.QUnit
-open Mibo.Signals
+open Mibo.Fable.Adaptive
 
 QUnit.module'("QUnit bindings", ignore)
 
@@ -40,9 +40,9 @@ QUnit.test(
     let source = CVal.create 1
     let doubled = AVal.map (fun v -> v * 2) source
 
-    assert'.strictEqual(AVal.get doubled, 2, "initial derivation")
+    assert'.strictEqual(AVal.force doubled, 2, "initial derivation")
     CVal.set 21 source
-    assert'.strictEqual(AVal.get doubled, 42, "derivation follows the write")
+    assert'.strictEqual(AVal.force doubled, 42, "derivation follows the write")
 )
 
 QUnit.test(
@@ -58,8 +58,8 @@ QUnit.test(
           v)
         source
 
-    AVal.get view |> ignore
-    AVal.get view |> ignore
+    AVal.force view |> ignore
+    AVal.force view |> ignore
     assert'.strictEqual(evaluations.Count, 1, "memoized after the first read")
     CVal.set 10 source
     CVal.set 10 source

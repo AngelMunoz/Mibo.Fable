@@ -1,375 +1,298 @@
-module MapTests
+module Map.Tests
 
-// AMap/CMap contracts against Mibo.Adaptive's public AMap/CMap surface.
+// Semantic tests for the ported adaptive maps: content, incremental
+// recomputation, per-key gates, groupBy live groups, transactions, posts.
 
+open System
+open System.Collections.Generic
+open Fable.Core
+open Mibo.Fable.Adaptive
 open Mibo.Testing.QUnit
-open Mibo.Signals
 
-QUnit.module'("CMap writes", ignore)
+let private kvToList(map: Dictionary<int, int>) =
+  map |> Seq.map(fun kv -> (kv.Key, kv.Value)) |> Seq.sort |> List.ofSeq
+
+let private kvToListS(map: Dictionary<string, int>) =
+  map |> Seq.map(fun kv -> (kv.Key, kv.Value)) |> Seq.sort |> List.ofSeq
 
 QUnit.test(
-  "addOrUpdate upserts; a repeated write leaves the value alone",
+  "AMap reads, count, isEmpty and per-key lookup",
   fun assert' ->
-    let users = CMap<string, int>()
-    CMap.addOrUpdate "ana" 1 users
-    assert'.strictEqual(CMap.tryGetValue "ana" users, ValueSome 1)
+    let m = CMap.ofSeq [ 1, 10; 2, 20 ] |> CMap.value
 
-    CMap.addOrUpdate "ana" 1 users
-    assert'.strictEqual(CMap.tryGetValue "ana" users, ValueSome 1, "no-op")
+    assert'.deepEqual(
+      box(kvToList(AMap.force m)),
+      box [ (1, 10); (2, 20) ],
+      "force materializes"
+    )
 
-    CMap.addOrUpdate "ana" 2 users
-    assert'.strictEqual(CMap.tryGetValue "ana" users, ValueSome 2)
+    assert'.equal(AMap.count m |> AVal.force, 2, "count")
+    assert'.equal(AMap.isEmpty m |> AVal.force, false, "isEmpty")
+
+    assert'.equal(
+      AMap.tryFind 2 m |> AVal.force,
+      ValueSome 20,
+      "tryFind present"
+    )
+
+    assert'.equal(AMap.tryFind 9 m |> AVal.force, ValueNone, "tryFind absent")
 )
 
 QUnit.test(
-  "set replaces the whole content, updateTo skips equal targets",
+  "AMap.map is incremental: unchanged entries never re-map",
   fun assert' ->
-    let users = CMap.ofSeq [ ("a", 1); ("b", 2) ]
-    CMap.set (Map [ ("b", 20); ("c", 30) ]) users
-    let current = CMap.force users
-    assert'.strictEqual(Map.count current, 2)
-    assert'.strictEqual(Map.find "c" current, 30)
-    assert'.strictEqual(CMap.updateTo [ ("b", 20); ("c", 30) ] users, false)
-    assert'.strictEqual(CMap.updateTo [ ("b", 20) ] users, true)
+    let src = CMap.ofSeq [ 1, 10; 2, 20 ]
+    let mutable mapped = 0
+
+    let derived =
+      src
+      |> CMap.value
+      |> AMap.map(fun k v ->
+        mapped <- mapped + 1
+        k + v)
+
+    AMap.count derived |> AVal.force |> ignore
+    let baseline = mapped
+
+    CMap.addOrUpdate 3 30 src
+
+    AMap.count derived |> AVal.force |> ignore
+
+    assert'.equal(mapped - baseline, 1, "only the new entry ran the mapping")
 )
 
 QUnit.test(
-  "remove drops a key and is a no-op when absent",
+  "AMap per-key lookup gates on its key only",
   fun assert' ->
-    let users = CMap.ofSeq [ ("a", 1) ]
-    CMap.remove "a" users
-    assert'.strictEqual(CMap.tryGetValue "a" users, ValueNone)
-    CMap.remove "a" users
-    assert'.strictEqual(Map.count(CMap.force users), 0)
-    CMap.clear users
-    assert'.strictEqual(Map.count(CMap.force users), 0)
+    let src = CMap.ofSeq [ 1, 10; 2, 20 ]
+    let mutable recomputeCount = 0
+
+    let lookup =
+      src
+      |> CMap.value
+      |> AMap.tryFind 1
+      |> AVal.map(fun v ->
+        recomputeCount <- recomputeCount + 1
+        v)
+
+    AVal.force lookup |> ignore
+    let baseline = recomputeCount
+
+    // An unrelated write must not change the watched value: the direct
+    // consumer settles once (the dirty indicator), then holds.
+    CMap.addOrUpdate 2 99 src
+    AVal.force lookup |> ignore
+
+    assert'.equal(AVal.force lookup, ValueSome 10, "watched value unchanged")
+
+    let settled = recomputeCount
+    AVal.force lookup |> ignore
+
+    assert'.equal(recomputeCount - settled, 0, "no further recomputes")
+
+    CMap.addOrUpdate 1 11 src
+
+    assert'.equal(AVal.force lookup, ValueSome 11, "the watched key updates")
 )
 
 QUnit.test(
-  "perform applies a builder batch atomically",
+  "AMap.unionWith resolves collisions; intersect/difference compose",
   fun assert' ->
-    let users = CMap<string, int>()
-    let delta = MapDeltaBuilder<string, int>()
-    delta.Set("a", 1)
-    delta.Set("b", 2)
-    delta.Set("b", 20)
-    delta.Remove("a")
-    CMap.perform delta users
-    let current = CMap.force users
-    assert'.strictEqual(Map.count current, 1)
-    assert'.strictEqual(Map.find "b" current, 20)
-)
+    let l = CMap.ofSeq [ 1, 10; 2, 20 ] |> CMap.value
+    let r = CMap.ofSeq [ 2, 99; 3, 30 ] |> CMap.value
 
-QUnit.module'("AMap reads", ignore)
+    let contents(m: amap<int, int>) = kvToList(AMap.force m)
 
-QUnit.test(
-  "count follows structure only, tryFind is per-key precise",
-  fun assert' ->
-    let users = CMap<string, int>()
-    let view = CMap.value users
-    let n = AMap.count view
-    let ana = AMap.tryFind "ana" view
-    assert'.strictEqual(AVal.get n, 0)
-    CMap.addOrUpdate "ana" 1 users |> ignore
-    CMap.addOrUpdate "bob" 2 users |> ignore
-    assert'.strictEqual(AVal.get n, 2)
-    assert'.strictEqual(AVal.get ana, ValueSome 1)
-    CMap.addOrUpdate "bob" 20 users |> ignore
-    assert'.strictEqual(AVal.get n, 2, "value write does not move count")
+    let u = AMap.unionWith (fun _ a b -> a + b) l r
 
-    assert'.strictEqual(
-      AVal.get ana,
-      ValueSome 1,
-      "other key's write is isolated"
+    assert'.deepEqual(
+      box(contents u),
+      box [ (1, 10); (2, 119); (3, 30) ],
+      "unionWith adds collisions"
+    )
+
+    let i = AMap.intersect l r
+
+    assert'.deepEqual(
+      box(i |> AMap.force |> Seq.map(fun kv -> kv.Key, kv.Value) |> List.ofSeq),
+      box [ (2, struct (20, 99)) ],
+      "intersect pairs both sides"
+    )
+
+    assert'.deepEqual(
+      box(contents(AMap.difference l r)),
+      box [ (1, 10) ],
+      "difference keeps left-only keys"
     )
 )
 
 QUnit.test(
-  "force materializes a snapshot; packing inside a batch raises",
+  "AMap ofASet/mapSet/toASet/keys convert with the right semantics",
   fun assert' ->
-    let users = CMap.ofSeq [ ("a", 1) ]
-    let view = CMap.value users
-    let snapshot = AMap.force view
-    CMap.addOrUpdate "a" 10 users |> ignore
-    assert'.strictEqual(Map.find "a" snapshot, 1, "snapshot is retained data")
+    let entries = CSet.ofSeq([ 1, 100; 2, 200 ] :> seq<int * int>)
 
-    assert'.throws(
-      (fun () -> Collections.batch(fun () -> AMap.force view |> ignore)),
-      "pack inside a batch raises"
+    let keepAll = AMap.ofASet(CSet.value entries)
+
+    assert'.deepEqual(
+      box(
+        keepAll
+        |> AMap.force
+        |> Seq.map(fun kv -> kv.Key, kv.Value.Count)
+        |> List.ofSeq
+      ),
+      box [ (1, 1); (2, 1) ],
+      "ofASet keeps per-key value sets"
     )
 
-    assert'.strictEqual(Map.find "a" (AMap.force view), 10)
-)
+    let keys = AMap.keys(CMap.value(CMap.ofSeq [ 5, 50; 6, 60 ]))
 
-QUnit.module'("AMap custom", ignore)
+    assert'.deepEqual(
+      box(keys |> ASet.force |> Seq.sort |> List.ofSeq),
+      box [ 5; 6 ],
+      "keys set"
+    )
 
-QUnit.test(
-  "custom pulls a delta-builder compute on every read",
-  fun assert' ->
-    // The event queue stands in for the world: each read consumes it.
-    let events = ResizeArray([ ("a", 1); ("b", 2) ])
-    let seen = ResizeArray<int>()
+    let pairs = AMap.toASet(CMap.value(CMap.ofSeq [ 1, 10 ]))
 
-    let view =
-      AMap.custom
-        (fun (current: Map<string, int>) (builder: MapDeltaBuilder<string, int>) ->
-          seen.Add(Map.count current)
-
-          if events.Count > 0 then
-            let (k, v) = events.[0]
-            events.RemoveAt(0)
-            builder.Set(k, v))
-
-    assert'.strictEqual(Map.count(AMap.force view), 1, "first read consumes a")
-    assert'.strictEqual(Map.count(AMap.force view), 2, "second read consumes b")
-    assert'.strictEqual(Map.count(AMap.force view), 2, "no events, no change")
-    assert'.strictEqual(seen.[0], 0, "compute saw the previous content")
-    assert'.strictEqual(seen.[1], 1)
-)
-
-QUnit.module'("AMap derivations", ignore)
-
-QUnit.test(
-  "map and filter re-derive per entry",
-  fun assert' ->
-    let users = CMap.ofSeq [ ("a", 1); ("b", 2); ("c", 3) ]
-    let view = CMap.value users
-    let doubled = AMap.map (fun _ v -> v * 2) view
-    let even = AMap.filter (fun _ v -> v % 2 = 0) view
-
-    assert'.strictEqual(Map.count(AMap.force doubled), 3)
-    assert'.strictEqual(Map.count(AMap.force even), 1)
-    assert'.strictEqual(Map.find "c" (AMap.force doubled), 6)
-
-    CMap.addOrUpdate "a" 10 users |> ignore
-    assert'.strictEqual(Map.count(AMap.force even), 2, "filter follows writes")
-)
-
-QUnit.test(
-  "union, intersect and difference follow the key sets",
-  fun assert' ->
-    let left = AMap.ofSeq [ ("a", 1); ("b", 2) ]
-    let right = AMap.ofSeq [ ("b", 20); ("c", 3) ]
-
-    assert'.strictEqual(Map.count(AMap.force(AMap.union left right)), 3)
-    assert'.strictEqual(Map.find "b" (AMap.force(AMap.union left right)), 20)
-    assert'.strictEqual(Map.count(AMap.force(AMap.intersect left right)), 1)
-    assert'.strictEqual(Map.count(AMap.force(AMap.difference left right)), 1)
-
-    assert'.strictEqual(
-      Map.find "a" (AMap.force(AMap.difference left right)),
-      1
+    assert'.deepEqual(
+      box(pairs |> ASet.force |> List.ofSeq),
+      box [ struct (1, 10) ],
+      "toASet struct pairs"
     )
 )
 
 QUnit.test(
-  "joinOn pairs outer entries with inner lookups",
+  "AMap.ofAVal replaces with a diff; AMap.bind swaps the inner map",
   fun assert' ->
-    let orders = AMap.ofSeq [ (1, "tea"); (2, "cup") ]
-    let prices = AMap.ofSeq [ ("tea", 2.5); ("cup", 1.0) ]
-    let priced = AMap.joinOn id orders prices
-    let current = AMap.force priced
-    assert'.strictEqual(Map.count current, 2)
-    let struct (name, price) = Map.find 1 current
-    assert'.strictEqual(name, "tea")
-    assert'.strictEqual(price, 2.5)
-)
+    let value = CVal.create([ 1, "a" ] :> seq<int * string>)
+    let fromValue = AMap.ofAVal(CVal.value value)
 
-QUnit.module'("AMap ofExternal", ignore)
+    assert'.equal(AMap.count fromValue |> AVal.force, 1, "initial")
 
-QUnit.test(
-  "snapshot runs at most once per invalidate",
-  fun assert' ->
-    let mutable current = Map [ ("a", 1) ]
-    let mutable reads = 0
+    CVal.set ([ 1, "a"; 2, "b" ] :> seq<int * string>) value
 
-    let world, invalidate =
-      AMap.ofExternal(fun () ->
-        reads <- reads + 1
-        current)
+    assert'.equal(AMap.count fromValue |> AVal.force, 2, "diff applied")
 
-    assert'.strictEqual(Map.count(AMap.force world), 1)
-    assert'.strictEqual(reads, 1)
-    assert'.strictEqual(Map.count(AMap.force world), 1, "cached read")
-    assert'.strictEqual(reads, 1)
+    let selected = CVal.create 0
+    let table0 = CMap.ofSeq [ "x", 1 ]
+    let table1 = CMap.ofSeq [ "y", 2 ]
 
-    current <- Map [ ("a", 1); ("b", 2) ]
-    invalidate()
-    assert'.strictEqual(Map.count(AMap.force world), 2)
-    assert'.strictEqual(reads, 2, "invalidate triggers exactly one snapshot")
-)
+    let visible =
+      AMap.bind
+        (fun i -> if i = 0 then CMap.value table0 else CMap.value table1)
+        (CVal.value selected)
 
-QUnit.module'("CMap boundary intents", ignore)
-
-QUnit.test(
-  "post* applies at the next operation; postClear wins",
-  fun assert' ->
-    let users = CMap<string, int>()
-    CMap.postAddOrUpdate "a" 1 users
-    assert'.strictEqual(CMap.tryGetValue "a" users, ValueSome 1, "read applies")
-
-    CMap.postAddOrUpdate "b" 2 users
-    CMap.postClear users
-    assert'.strictEqual(Map.count(CMap.force users), 0, "clear wipes the batch")
-)
-
-// ─── Ports of Mibo.Adaptive.Tests collection behaviors ───
-
-let toMapString(map: Map<int, int>) : string =
-  map |> Seq.map(fun kv -> sprintf "%d=%d" kv.Key kv.Value) |> String.concat ";"
-
-QUnit.module'("Mibo.Adaptive parity", ignore)
-
-QUnit.test(
-  "AMap map and filter respond to updates",
-  fun assert' ->
-    let source = CMap.ofSeq [ (1, 10); (2, 20); (3, 30) ]
-    let mapped = AMap.map (fun _ v -> v + 1) (CMap.value source)
-    let filtered = AMap.filter (fun _ v -> v > 15) mapped
-
-    // Initial: 2->21, 3->31 pass the filter.
-    assert'.strictEqual(Map.count(AMap.force filtered), 2)
-    assert'.strictEqual(Map.find 2 (AMap.force filtered), 21)
-    assert'.strictEqual(Map.find 3 (AMap.force filtered), 31)
-
-    CMap.addOrUpdate 4 40 source
-    assert'.strictEqual(Map.count(AMap.force filtered), 3, "add flows through")
-    assert'.strictEqual(Map.find 4 (AMap.force filtered), 41)
-
-    CMap.remove 3 source
-
-    assert'.strictEqual(
-      Map.count(AMap.force filtered),
-      2,
-      "remove flows through"
+    assert'.deepEqual(
+      box(kvToListS(AMap.force visible)),
+      box [ ("x", 1) ],
+      "bound to table0"
     )
 
-    assert'.strictEqual(Map.tryFind 3 (AMap.force filtered), ValueNone)
-)
+    CVal.set 1 selected
 
-QUnit.test(
-  "AMap filter ignores non-matching updates",
-  fun assert' ->
-    let source = CMap.ofSeq [ (1, 5); (2, 20) ]
-    let filtered = AMap.filter (fun _ v -> v > 10) (CMap.value source)
-    assert'.strictEqual(Map.count(AMap.force filtered), 1)
-
-    CMap.addOrUpdate 1 8 source
-    CMap.addOrUpdate 3 9 source
-
-    let current = AMap.force filtered
-    assert'.strictEqual(Map.count current, 1, "non-matching entries stay out")
-    assert'.strictEqual(Map.tryFind 1 current, ValueNone)
-    assert'.strictEqual(Map.tryFind 3 current, ValueNone)
-)
-
-QUnit.test(
-  "AMap filter updates on removals and crossing writes",
-  fun assert' ->
-    let source = CMap.ofSeq [ (1, 10); (2, 20); (3, 30) ]
-    let filtered = AMap.filter (fun _ v -> v >= 20) (CMap.value source)
-    assert'.strictEqual(Map.count(AMap.force filtered), 2)
-
-    CMap.remove 3 source
-    assert'.strictEqual(Map.count(AMap.force filtered), 1)
-
-    CMap.addOrUpdate 1 25 source
-    let current = AMap.force filtered
-
-    assert'.strictEqual(
-      Map.count current,
-      2,
-      "write crossing the threshold enters"
+    assert'.deepEqual(
+      box(kvToListS(AMap.force visible)),
+      box [ ("y", 2) ],
+      "swapped to table1"
     )
 
-    assert'.strictEqual(Map.find 1 current, 25)
+    CMap.addOrUpdate "x" 77 table0
+
+    assert'.notOk(
+      (AMap.force visible).ContainsKey "x",
+      "unbound inner detached"
+    )
 )
 
 QUnit.test(
-  "AMap filter drops entries when the value falls below the threshold",
+  "AMap.groupBy exposes live per-group maps",
   fun assert' ->
-    let source = CMap.ofSeq [ (1, 5); (2, 15); (3, 25) ]
-    let filtered = AMap.filter (fun _ v -> v >= 10) (CMap.value source)
-    assert'.strictEqual(Map.count(AMap.force filtered), 2)
+    let docs = CMap.ofSeq [ 1, "a"; 2, "b"; 3, "a" ]
 
-    CMap.addOrUpdate 2 8 source
-    let current = AMap.force filtered
-    assert'.strictEqual(Map.count current, 1)
-    assert'.strictEqual(Map.tryFind 2 current, ValueNone)
+    let byAuthor = AMap.groupBy (fun _ (doc: string) -> doc) (CMap.value docs)
+
+    let groups = AMap.force byAuthor
+
+    assert'.equal(groups.Count, 2, "two groups")
+
+    let groupA = groups["a"]
+    assert'.equal(AMap.count groupA |> AVal.force, 2, "group a holds two docs")
+
+    CMap.addOrUpdate 4 "a" docs
+    AMap.force byAuthor |> ignore // drain routes the delta into the child
+
+    assert'.equal(AMap.count groupA |> AVal.force, 3, "group content is live")
+
+    CMap.remove 1 docs
+    CMap.remove 3 docs
+    CMap.remove 4 docs
+
+    assert'.equal((AMap.force byAuthor).Count, 1, "empty groups disappear")
 )
 
 QUnit.test(
-  "AMap mapA follows entry avals and structural edits",
+  "CMap transactions net deltas; perform batches; posts coalesce",
   fun assert' ->
-    let m = CMap.ofSeq [ ("A", 1); ("B", 2); ("C", 3) ]
-    let flag = CVal.create true
+    let src = CMap.ofSeq [ 1, 10; 2, 20 ]
+    let mutable recomputeCount = 0
 
-    let res =
-      AMap.mapA
-        (fun _ v -> AVal.map (fun f -> if f then v else -1) flag)
-        (CMap.value m)
+    let derived =
+      src
+      |> CMap.value
+      |> AMap.count
+      |> AVal.map(fun c ->
+        recomputeCount <- recomputeCount + 1
+        c)
 
-    assert'.strictEqual(Map.find "B" (AMap.force res), 2)
+    AVal.force derived |> ignore
+    let baseline = recomputeCount
 
-    // A scalar flip re-derives every entry (each cell tracks the flag).
-    CVal.set false flag
-    assert'.strictEqual(Map.find "A" (AMap.force res), -1)
-    assert'.strictEqual(Map.find "C" (AMap.force res), -1)
+    Transaction.run(fun () ->
+      CMap.addOrUpdate 3 30 src
+      CMap.remove 3 src
+      CMap.addOrUpdate 1 11 src)
 
-    // A whole-map replace is picked up by the derived cells.
-    CMap.set (Map [ ("A", 2); ("B", 4); ("C", 6) ]) m
-    CVal.set true flag
-    assert'.strictEqual(Map.find "B" (AMap.force res), 4)
-
-    CMap.remove "B" m
-    assert'.strictEqual(Map.count(AMap.force res), 2)
-
-    CMap.addOrUpdate "D" 8 m
-    assert'.strictEqual(Map.find "D" (AMap.force res), 8)
-)
-
-QUnit.test(
-  "AMap map responds to CMap.set",
-  fun assert' ->
-    let source = CMap.ofSeq [ (1, 10); (2, 20) ]
-    let mapped = AMap.map (fun k v -> v + k) (CMap.value source)
-    assert'.strictEqual(Map.find 2 (AMap.force mapped), 22)
-
-    CMap.set (Map [ (2, 5); (3, 7) ]) source
-    let current = AMap.force mapped
-    assert'.strictEqual(Map.count current, 2)
-    assert'.strictEqual(Map.find 2 current, 7)
-    assert'.strictEqual(Map.find 3 current, 10)
-)
-
-QUnit.test(
-  "batch coalesces writes: the derived view recomputes once",
-  fun assert' ->
-    let source = CMap<string, int>()
-    let filtered = AMap.filter (fun _ v -> v >= 10) (CMap.value source)
-    let evaluations = ResizeArray<int>()
-
-    let watch =
-      AVal.computed(fun () ->
-        let n = Map.count(AMap.force filtered)
-        evaluations.Add n
-        n)
-
-    AVal.get watch |> ignore
-    let before = evaluations.Count
-
-    Collections.batch(fun () ->
-      CMap.addOrUpdate "a" 5 source |> ignore
-      CMap.addOrUpdate "b" 10 source |> ignore
-      CMap.addOrUpdate "a" 50 source |> ignore)
-
-    AVal.get watch |> ignore
-
-    assert'.strictEqual(
-      evaluations.Count - before,
-      1,
-      "one read after the batch re-derives once"
+    assert'.deepEqual(
+      box(kvToList(AMap.force(CMap.value src))),
+      box [ (1, 11); (2, 20) ],
+      "net content: 3 cancelled, 1 updated"
     )
 
-    assert'.strictEqual(AVal.get watch, 2)
+    AVal.force derived |> ignore
+
+    assert'.equal(recomputeCount - baseline, 1, "one net delta")
+
+    let builder = MapDeltaBuilder<int, int>()
+    builder.Set(4, 40)
+    builder.Remove(9) // no-op
+    CMap.perform builder src
+
+    assert'.equal(AVal.force derived, 3, "perform applied the batch")
+
+    CMap.postAddOrUpdate 5 50 src
+    CMap.postRemove 4 src
+
+    assert'.equal(AVal.force derived, 3, "posts applied at the read")
+)
+
+QUnit.test(
+  "CMap.addOrUpdate skips equal writes at the source",
+  fun assert' ->
+    let src = CMap.ofSeq [ 1, 10 ]
+    let mutable recomputeCount = 0
+
+    let derived =
+      src
+      |> CMap.value
+      |> AMap.count
+      |> AVal.map(fun c ->
+        recomputeCount <- recomputeCount + 1
+        c)
+
+    AVal.force derived |> ignore
+    let baseline = recomputeCount
+
+    CMap.addOrUpdate 1 10 src // equal: no-op
+
+    assert'.equal(recomputeCount - baseline, 0, "equal write marks nothing")
 )

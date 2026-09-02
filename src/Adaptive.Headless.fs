@@ -1,16 +1,16 @@
-namespace Mibo.Signals
+namespace Mibo.Fable.Adaptive
 
 open System
 open Mibo.Elmish
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The signals headless runner — the web-side counterpart of Mibo.Adaptive's
+// The adaptive headless runner — the web-side counterpart of Mibo.Core's
 // AdaptiveProgram + AdaptiveHeadless (the State · Projection · Update · Force
-// model Defli and Kimo build on).
+// model).
 //
 // The runner owns the frame boundary. Each Step:
-//   (1) drains the boundary lane — externally posted work (Dispatch, host
-//       events) lands before the step reads state,
+//   (1) applies pending posts and drains the boundary lane — externally
+//       posted work (host events) lands before the step reads state,
 //   (2) writes the current game time into the time root (once per fixed
 //       sub-step when FixedStep is set),
 //   (3) runs the program's Update phase — reads projections, writes roots,
@@ -18,13 +18,12 @@ open Mibo.Elmish
 //       order; work posted during the drain runs in the same drain,
 //   (5) forces the frame builder — every projection read by the force
 //       recomputes at most once if a dependency moved, not at all otherwise,
-//   (6) notifies the observers with the forced frame. Draw code reads the
-//       returned frame: plain data until the next step writes again.
+//   (6) notifies the observers with the forced frame.
 //
 // What the .NET version needed that the web does not: threads, semaphores,
-// concurrent queues and cross-thread post pumping. The graph is confined to
-// the one JS thread; "freeze a frame and publish it" is finishing your
-// writes and handing out the snapshot.
+// concurrent queues and the dedicated game thread of RunAsync. The graph is
+// confined to the one JS thread; posts ride the graph post queue and drain
+// automatically at the next graph operation.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type IntentQueue() =
@@ -73,12 +72,12 @@ type IntentQueue() =
 
     afterUpdate.Clear()
 
-type SignalsFrameContext
+type AdaptiveFrameContext
   internal
   (
     ctx: GameContext,
-    time: CVal<GameTime>,
-    exitRequested: CVal<bool>,
+    time: cval<GameTime>,
+    exitRequested: cval<bool>,
     intents: IntentQueue
   ) =
 
@@ -93,9 +92,8 @@ type SignalsFrameContext
 
   member _.Intents = intents
 
-type SignalsContext
-  internal (frameCtx: SignalsFrameContext, intents: IntentQueue) =
-
+type AdaptiveContext
+  internal (frameCtx: AdaptiveFrameContext, intents: IntentQueue) =
   member _.Time = frameCtx.Time
   member _.ExitRequested = frameCtx.ExitRequested
   member _.Context = frameCtx.Context
@@ -103,16 +101,16 @@ type SignalsContext
   member _.WindowHeight = frameCtx.WindowHeight
   member _.Intents = intents
 
-type SignalsInit<'Frame> = {
+type AdaptiveInit<'Frame> = {
   FrameBuilder: unit -> 'Frame
 
   Disposables: IDisposable list
 }
 
-module SignalsInit =
+module AdaptiveInit =
 
   /// Creates an init from a frame builder — no disposables.
-  let ofFrameBuilder(frameBuilder: unit -> 'Frame) : SignalsInit<'Frame> = {
+  let ofFrameBuilder(frameBuilder: unit -> 'Frame) : AdaptiveInit<'Frame> = {
     FrameBuilder = frameBuilder
     Disposables = []
   }
@@ -120,8 +118,8 @@ module SignalsInit =
   /// Appends disposables released when the runner is disposed.
   let withDisposables
     (disposables: IDisposable list)
-    (init: SignalsInit<'Frame>)
-    : SignalsInit<'Frame> =
+    (init: AdaptiveInit<'Frame>)
+    : AdaptiveInit<'Frame> =
     {
       init with
           Disposables = init.Disposables @ disposables
@@ -130,14 +128,14 @@ module SignalsInit =
   /// Adds a single disposable.
   let withDisposable
     (disposable: IDisposable)
-    (init: SignalsInit<'Frame>)
-    : SignalsInit<'Frame> =
+    (init: AdaptiveInit<'Frame>)
+    : AdaptiveInit<'Frame> =
     {
       init with
           Disposables = disposable :: init.Disposables
     }
 
-type SignalsFixedStepConfig = {
+type AdaptiveFixedStepConfig = {
   StepSeconds: float32
 
   MaxStepsPerFrame: int
@@ -145,23 +143,23 @@ type SignalsFixedStepConfig = {
   MaxFrameSeconds: float32 voption
 }
 
-type SignalsProgram<'Frame> = {
-  Init: SignalsFrameContext -> SignalsInit<'Frame>
+type AdaptiveProgram<'Frame> = {
+  Init: AdaptiveFrameContext -> AdaptiveInit<'Frame>
 
-  Update: SignalsContext -> GameTime -> unit
+  Update: AdaptiveContext -> GameTime -> unit
 
   Observers: (unit -> IObserver<struct (GameContext * 'Frame * GameTime)>) list
 
-  FixedStep: SignalsFixedStepConfig voption
+  FixedStep: AdaptiveFixedStepConfig voption
 }
 
 [<RequireQualifiedAccess>]
-module SignalsProgram =
+module AdaptiveProgram =
 
   let mkProgram
-    (init: SignalsFrameContext -> SignalsInit<'Frame>)
-    (update: SignalsContext -> GameTime -> unit)
-    : SignalsProgram<'Frame> =
+    (init: AdaptiveFrameContext -> AdaptiveInit<'Frame>)
+    (update: AdaptiveContext -> GameTime -> unit)
+    : AdaptiveProgram<'Frame> =
     {
       Init = init
       Update = update
@@ -172,17 +170,17 @@ module SignalsProgram =
   /// Adds an observer notified with the forced frame after every step.
   let withObserver
     (factory: unit -> IObserver<struct (GameContext * 'Frame * GameTime)>)
-    (program: SignalsProgram<'Frame>)
-    : SignalsProgram<'Frame> =
+    (program: AdaptiveProgram<'Frame>)
+    : AdaptiveProgram<'Frame> =
     {
       program with
           Observers = factory :: program.Observers
     }
 
   let withFixedStep
-    (cfg: SignalsFixedStepConfig)
-    (program: SignalsProgram<'Frame>)
-    : SignalsProgram<'Frame> =
+    (cfg: AdaptiveFixedStepConfig)
+    (program: AdaptiveProgram<'Frame>)
+    : AdaptiveProgram<'Frame> =
     if cfg.StepSeconds <= 0.0f then
       invalidArg (nameof cfg.StepSeconds) "StepSeconds must be > 0"
 
@@ -194,8 +192,8 @@ module SignalsProgram =
           FixedStep = ValueSome cfg
     }
 
-type SignalsHeadless<'Frame>
-  (program: SignalsProgram<'Frame>, ?width: int, ?height: int) =
+type AdaptiveHeadless<'Frame>
+  (program: AdaptiveProgram<'Frame>, ?width: int, ?height: int) =
 
   let w = defaultArg width 800
   let h = defaultArg height 600
@@ -207,8 +205,8 @@ type SignalsHeadless<'Frame>
 
   let mutable initialized = false
   let mutable gameContext = Unchecked.defaultof<GameContext>
-  let mutable frameCtx = Unchecked.defaultof<SignalsFrameContext>
-  let mutable ctx = Unchecked.defaultof<SignalsContext>
+  let mutable frameCtx = Unchecked.defaultof<AdaptiveFrameContext>
+  let mutable ctx = Unchecked.defaultof<AdaptiveContext>
   let mutable frameBuilder: unit -> 'Frame = Unchecked.defaultof<unit -> 'Frame>
   let mutable disposables: IDisposable list = []
 
@@ -228,8 +226,8 @@ type SignalsHeadless<'Frame>
 
       let timeRoot = CVal.create gameTime
       let exitRoot = CVal.create false
-      frameCtx <- SignalsFrameContext(gameContext, timeRoot, exitRoot, intents)
-      ctx <- SignalsContext(frameCtx, intents)
+      frameCtx <- AdaptiveFrameContext(gameContext, timeRoot, exitRoot, intents)
+      ctx <- AdaptiveContext(frameCtx, intents)
 
       let init = program.Init frameCtx
       frameBuilder <- init.FrameBuilder
@@ -243,6 +241,7 @@ type SignalsHeadless<'Frame>
       // Startup drain: Init's posted work runs before the first frame.
       intents.DrainBoundary()
 
+      // Force the first frame so Frame is never default after initialization.
       frame <- frameBuilder()
 
   let stepCore(dtSeconds: float32) =
@@ -253,14 +252,16 @@ type SignalsHeadless<'Frame>
       ElapsedGameTime = dt
     }
 
-    Signals.batch(fun () ->
-      CVal.set gameTime frameCtx.Time
-      program.Update ctx gameTime
-      intents.DrainAfterUpdate())
+    // The time root is the framework's write into the graph; the update
+    // phase reads projections and writes roots directly (the pull-lazy
+    // graph recomputes on read — no batching machinery).
+    CVal.set gameTime ctx.Time
+    program.Update ctx gameTime
+    intents.DrainAfterUpdate()
 
   member _.ShouldQuit =
     ensureInitialized()
-    CVal.get frameCtx.ExitRequested
+    AVal.getValue frameCtx.ExitRequested
 
   member _.Frame =
     ensureInitialized()
@@ -287,7 +288,7 @@ type SignalsHeadless<'Frame>
   member _.Step(elapsed: TimeSpan) : unit =
     ensureInitialized()
 
-    if CVal.get frameCtx.ExitRequested then
+    if AVal.getValue frameCtx.ExitRequested then
       ()
     else
       // Clamp negatives; go through milliseconds so the clamp stays a
@@ -297,8 +298,11 @@ type SignalsHeadless<'Frame>
       let ms = if ms < 0.0 then 0.0 else ms
       let elapsed = TimeSpan.FromMilliseconds ms
 
-      // Boundary: externally posted work (input, host events) lands
-      // before this step reads state.
+      // Frame boundary: pending posted values apply first (the graph
+      // drains them automatically at the next operation; the explicit
+      // pump mirrors the .NET runner), then externally posted work
+      // (input, host events) lands before this step reads state.
+      Posting.pump()
       intents.DrainBoundary()
 
       match program.FixedStep with
@@ -313,17 +317,17 @@ type SignalsHeadless<'Frame>
         fixedAccSeconds <- fixedAccSeconds + clamped
         let mutable steps = 0
 
-        Signals.batch(fun () ->
-          while fixedAccSeconds >= cfg.StepSeconds
-                && steps < cfg.MaxStepsPerFrame do
-            fixedAccSeconds <- fixedAccSeconds - cfg.StepSeconds
-            stepCore cfg.StepSeconds
-            steps <- steps + 1)
+        while fixedAccSeconds >= cfg.StepSeconds && steps < cfg.MaxStepsPerFrame do
+          fixedAccSeconds <- fixedAccSeconds - cfg.StepSeconds
+          stepCore cfg.StepSeconds
+          steps <- steps + 1
 
         if steps = cfg.MaxStepsPerFrame then
           // Cap hit: drop the backlog instead of spiraling.
           fixedAccSeconds <- 0.0f
 
+      // Force phase: recompute the frame's projections exactly once (not
+      // at all if none of their dependencies moved).
       frame <- frameBuilder()
 
       for i = 0 to observers.Count - 1 do

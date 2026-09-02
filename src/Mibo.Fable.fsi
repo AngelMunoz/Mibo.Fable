@@ -78,50 +78,50 @@ val dispose: runner: HeadlessRunner<'Model, 'Msg> -> unit
 // readonly frame forced at the end of every step.
 // ─────────────────────────────────────────────────────────────────────────────
 
-open Mibo.Signals
+open Mibo.Fable.Adaptive
 
 /// Creates a signals runner. `init` builds the graph (roots and
 /// projections) and returns the frame force; `update` is the per-frame
 /// phase that reads projections and writes roots.
 val createAdaptiveRunner:
-  init: (SignalsFrameContext -> SignalsInit<'Frame>) ->
-  update: (SignalsContext -> GameTime -> unit) ->
+  init: (AdaptiveFrameContext -> AdaptiveInit<'Frame>) ->
+  update: (AdaptiveContext -> GameTime -> unit) ->
   width: int ->
   height: int ->
-    SignalsHeadless<'Frame>
+    AdaptiveHeadless<'Frame>
 
 /// Creates a signals runner with framework-managed fixed-step sub-stepping:
 /// each frame's delta is converted into zero or more `stepSeconds` sub-steps
 /// (capped at `maxStepsPerFrame`); the frame is forced once at the end.
 val createAdaptiveRunnerWithFixedStep:
-  init: (SignalsFrameContext -> SignalsInit<'Frame>) ->
-  update: (SignalsContext -> GameTime -> unit) ->
+  init: (AdaptiveFrameContext -> AdaptiveInit<'Frame>) ->
+  update: (AdaptiveContext -> GameTime -> unit) ->
   stepSeconds: float ->
   maxStepsPerFrame: int ->
   width: int ->
   height: int ->
-    SignalsHeadless<'Frame>
+    AdaptiveHeadless<'Frame>
 
 /// Advances the adaptive simulation by one frame of the given length in
 /// milliseconds.
-val stepAdaptiveFrame: ms: float -> runner: SignalsHeadless<'Frame> -> unit
+val stepAdaptiveFrame: ms: float -> runner: AdaptiveHeadless<'Frame> -> unit
 
 /// Advances the adaptive simulation by <c>count</c> frames.
 val stepAdaptiveFrames:
-  count: int -> ms: float -> runner: SignalsHeadless<'Frame> -> unit
+  count: int -> ms: float -> runner: AdaptiveHeadless<'Frame> -> unit
 
 /// Advances until the predicate on the forced frame returns true.
 val stepAdaptiveUntil:
   predicate: ('Frame -> bool) ->
   ms: float ->
-  runner: SignalsHeadless<'Frame> ->
+  runner: AdaptiveHeadless<'Frame> ->
     bool
 
 /// Posts boundary work onto the runner — the host's injection point
 /// (input events, external writes). It runs at the start of the next
 /// step, before Update.
 val postAdaptiveIntent:
-  work: (unit -> unit) -> runner: SignalsHeadless<'Frame> -> unit
+  work: (unit -> unit) -> runner: AdaptiveHeadless<'Frame> -> unit
 
 /// Starts `work` immediately; when the promise settles, `done` runs at the
 /// next post drain (after Update, before the frame is forced) — errors go
@@ -130,28 +130,21 @@ val postAdaptiveIntent:
 val postAdaptiveTask:
   work: (unit -> JS.Promise<'T>) ->
   onDone: ('T -> unit) ->
-  runner: SignalsHeadless<'Frame> ->
+  runner: AdaptiveHeadless<'Frame> ->
     unit
 
 /// Registers a per-frame callback receiving the forced readonly frame.
 val onAdaptiveFrame:
-  onNext: ('Frame -> unit) -> runner: SignalsHeadless<'Frame> -> unit
+  onNext: ('Frame -> unit) -> runner: AdaptiveHeadless<'Frame> -> unit
 
 /// The last forced frame.
-val adaptiveFrame: runner: SignalsHeadless<'Frame> -> 'Frame
+val adaptiveFrame: runner: AdaptiveHeadless<'Frame> -> 'Frame
 
 /// Whether the adaptive simulation received an exit request.
-val adaptiveShouldQuit: runner: SignalsHeadless<'Frame> -> bool
+val adaptiveShouldQuit: runner: AdaptiveHeadless<'Frame> -> bool
 
 /// Total time simulated so far, in milliseconds.
-val adaptiveElapsedMs: runner: SignalsHeadless<'Frame> -> float
+val adaptiveElapsedMs: runner: AdaptiveHeadless<'Frame> -> float
 
 /// Releases the runner's disposables.
-val disposeAdaptive: runner: SignalsHeadless<'Frame> -> unit
-
-/// Groups signal writes so dependent work runs once after the batch.
-val batchWrites: work: (unit -> unit) -> unit
-
-/// Runs `work` now and again whenever any signal it read changes; returns
-/// the disposer. The push side — useful for view binding in the host.
-val onSignalChange: work: (unit -> unit) -> (unit -> unit)
+val disposeAdaptive: runner: AdaptiveHeadless<'Frame> -> unit

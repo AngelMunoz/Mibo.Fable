@@ -22,9 +22,10 @@ General setup and usage instructions are in [README.md](README.md). Template det
 
 - `src/` — the simulation core published as the `Mibo.Fable` package
   - `Vectors.fs` — own `Vector2/3/4` structs. **Must stay first in the compile order** in `Mibo.Fable.fsproj`; everything else depends on it.
-  - `Signals.fs` — `CVal`/`AVal` signal cells over `@preact/signals-core` (the web counterpart of Mibo.Adaptive's cval/aval). Loads right after `Vectors.fs`.
+  - `Adaptive.fs` — the scalar core under namespace `Mibo.Fable.Adaptive`: `CVal`/`AVal`, transactions, posting, dependency collector. A web port of `Mibo.Adaptive`'s `Core/Library.fs` (pull-lazy dependency graph: writes bump versions, reads version-check and recompute at most once per change). Loads right after `Vectors.fs`.
+  - `Adaptive.Collections.fs` + node files — the adaptive collections (`aset`/`amap`/`alist`, `cset`/`cmap`/`clist`) as a web port of `Mibo.Adaptive`'s `Core/Collections/*`: journals, delta sinks, refcounted sets, two-source algebra, reductions, per-element `*A` nodes. The public surface lives in `Adaptive.Api.fs` (`ASet`/`AMap`/`AList`/`CSet`/`CMap`/`CList`).
   - `Elmish.*.fs` — the MVU loop, time, commands, subscriptions, and the headless runner (`HeadlessRunner`: `Step`, `StepN`, `StepUntil`, `Dispatch`, `Model`).
-  - `Signals.Headless.fs` — the adaptive-style runner (`SignalsHeadless`: State · Projection · Update · Force). Same host surface as `HeadlessRunner`, but `update` mutates signal roots and observers receive a readonly frame forced at the end of each step. Fixed-step, intent queues, `PostTask` (promise completions re-enter via the post drain), and the push-side effect API included; see `tests/Adaptive.Smoke.fs` for the full semantic contract.
+  - `Adaptive.Headless.fs` — the adaptive runner (`AdaptiveHeadless`: State · Projection · Update · Force). Same host surface as `HeadlessRunner`, but `update` mutates adaptive roots and observers receive a readonly frame forced at the end of each step. Fixed-step, intent queues, `PostTask` (promise completions re-enter via the post drain) included; see `tests/Adaptive.Tests.fs` for the semantic contract.
   - `Layout/`, `Layout3D/` — grid, hex, and spatial layouts.
   - `Graphics/`, `Graphics2D/`, `Graphics3D/` — the backend-neutral draw command DSL.
   - `Diagnostics.fs` — frame profiler. Uses a system clock and reports zeros for GC counters on JS (no way to count allocations there).
@@ -53,7 +54,7 @@ The core abstractions of the library MUST NOT incur performance penalties for us
 - Favor arrays over lists. `Array.blit` and index writes replace Span and pooling.
 - Prefer inline functions for hot-path helpers. Fable erases them into call sites.
 - Favor functional programming patterns, but allow mutable state when performance needs it.
-- Signal invalidation is reference-based (`Object.is`). A write with a new object marks the value changed, even when the contents are equal. Write roots only when values changed.
+- Write-path equality is value-based (`EqualityComparer.Default`, structural on Fable). A write with an equal value marks nothing; collection deltas are derived at the source.
 - Public API should be ergonomic and easy to use.
 - Public API should be well documented with XML comments.
 - Public API should follow elmish-friendly patterns where applicable (State · Projection · Update · Force for the adaptive side).
@@ -65,7 +66,7 @@ Fable compiles F# to JS with a subset of .NET semantics. These behave differentl
 - **TimeSpan comparisons can truncate.** Some `TimeSpan` operations compile to int coercion on JS; sub-millisecond frame deltas vanish. Do time math through `TotalMilliseconds` (a float) and `TimeSpan.FromMilliseconds`.
 - **Interface type tests are always false.** `:? IThing` never matches on JS. The service registry uses keyed lookup plus `unbox` (safe: registration keys on `typeof<'T>`).
 - **Generics need `inline`.** `typeof<'T>` and generic pass-through accessors only work when the function is `inline`; Fable substitutes the concrete type at each call site.
-- **Signal invalidation is reference-based.** Writing a fresh tuple or record with equal contents still invalidates dependents.
+- **Interface member dispatch needs concrete receivers.** Calling Contains or the get_Item indexer through IReadOnlySet/IReadOnlyList throws at runtime: no such qualified members exist in the emitted JS. Route views through Collections.asHashSet/asDictionary/asResizeList before member access; plain iteration (for x in view) is safe.
 - **`throw 1` in emitted JS** means Fable dropped part of a member — usually broken indentation in the F# source or an unsupported construct. The compiler can still exit 0. Grep the emitted output when behavior looks impossible.
 
 ## Commands

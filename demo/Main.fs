@@ -5,7 +5,7 @@ open Browser
 open Browser.Types
 open Fable.Core
 open Mibo.Fable.Exports
-open Mibo.Signals
+open Mibo.Fable.Adaptive
 open Mibo.Elmish
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ open Mibo.Elmish
 //   left  — MVU: update returns a new model each frame (HeadlessRunner)
 //   right — adaptive: long-lived signal roots mutated in place, derived
 //           projections, and a frame force that publishes a readonly
-//           RenderFrame each step (SignalsHeadless — the State · Projection
+//           RenderFrame each step (AdaptiveHeadless — the State · Projection
 //           · Update · Force model from Defli/Kimo)
 //
 // The page is identical for both: step the runner each animation frame,
@@ -165,12 +165,12 @@ let drawMvu() =
 /// so both the graph builder (init) and the per-frame update capture it,
 /// exactly like Defli's State + StateCell.
 type WorldRoots = {
-  Pos: CVal<struct (float * float)>
-  Vel: CVal<struct (float * float)>
-  Bounces: CVal<int>
-  Frames: CVal<int>
-  Kicks: CVal<int>
-  Clock: CVal<GameTime>
+  Pos: cval<struct (float * float)>
+  Vel: cval<struct (float * float)>
+  Bounces: cval<int>
+  Frames: cval<int>
+  Kicks: cval<int>
+  Clock: cval<GameTime>
 }
 
 /// RenderFrame: everything the renderer needs, packed once per step.
@@ -204,38 +204,38 @@ let world = {
 // Projection: speed is a derived, memoized view of the velocity root —
 // it only recomputes when the velocity actually changes.
 let speedProjection =
-  AVal.computed(fun () ->
-    let struct (vx, vy) = AVal.get world.Vel
+  AVal.custom(fun () ->
+    let struct (vx, vy) = AVal.getValue world.Vel
     sqrt(vx * vx + vy * vy))
 
 let kickWorld() : unit =
-  let struct (vx, vy) = CVal.get world.Vel
+  let struct (vx, vy) = world.Vel.Value
   CVal.set (struct (-vx * 1.4 |> capSpeed, -vy * 1.4 |> capSpeed)) world.Vel
-  CVal.set (CVal.get world.Kicks + 1) world.Kicks
+  CVal.set (world.Kicks.Value + 1) world.Kicks
 
 // Init: builds the derived graph and returns the frame force — the readonly
 // view packed once per step, after which drawing is plain data reads.
-let adaptiveInit(_ctx: SignalsFrameContext) : SignalsInit<RenderFrame> =
+let adaptiveInit(_ctx: AdaptiveFrameContext) : AdaptiveInit<RenderFrame> =
   let force() : RenderFrame =
-    let struct (x, y) = AVal.get world.Pos
+    let struct (x, y) = AVal.getValue world.Pos
 
     {|
       X = x
       Y = y
-      Speed = AVal.get speedProjection
-      Bounces = AVal.get world.Bounces
-      Frames = AVal.get world.Frames
-      Kicks = AVal.get world.Kicks
+      Speed = AVal.getValue speedProjection
+      Bounces = AVal.getValue world.Bounces
+      Frames = AVal.getValue world.Frames
+      Kicks = AVal.getValue world.Kicks
     |}
 
-  SignalsInit.ofFrameBuilder force
+  AdaptiveInit.ofFrameBuilder force
 
 // Update: reads projections, writes roots — no model is ever returned.
-let adaptiveUpdate (_ctx: SignalsContext) (gt: GameTime) : unit =
+let adaptiveUpdate (_ctx: AdaptiveContext) (gt: GameTime) : unit =
   CVal.set gt world.Clock
 
-  let struct (px, py) = CVal.get world.Pos
-  let struct (vx, vy) = CVal.get world.Vel
+  let struct (px, py) = world.Pos.Value
+  let struct (vx, vy) = world.Vel.Value
 
   let struct (x, y, vx, vy, bounced) =
     stepPos gt.ElapsedGameTime.TotalMilliseconds px py vx vy
@@ -244,9 +244,9 @@ let adaptiveUpdate (_ctx: SignalsContext) (gt: GameTime) : unit =
 
   if bounced then
     CVal.set (struct (vx, vy)) world.Vel
-    CVal.set (CVal.get world.Bounces + 1) world.Bounces
+    CVal.set (world.Bounces.Value + 1) world.Bounces
 
-  CVal.set (CVal.get world.Frames + 1) world.Frames
+  CVal.set (world.Frames.Value + 1) world.Frames
 
 let adaptiveRunner =
   createAdaptiveRunnerWithFixedStep
