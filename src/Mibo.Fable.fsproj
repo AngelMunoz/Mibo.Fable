@@ -49,6 +49,8 @@
         <Compile Include="Collections.fs" />
         <Compile Include="Color.fsi" />
         <Compile Include="Color.fs" />
+        <Compile Include="ColorHelpers.fsi" />
+        <Compile Include="ColorHelpers.fs" />
         <Compile Include="Animation3D.fsi" />
         <Compile Include="Animation3D.fs" />
         <Compile Include="Animation3DClipsInfo.fsi" />
