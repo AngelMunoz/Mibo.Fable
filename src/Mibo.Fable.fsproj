@@ -21,6 +21,8 @@
         <Compile Include="Adaptive/AVal.fs" />
         <Compile Include="Adaptive/CVal.fsi" />
         <Compile Include="Adaptive/CVal.fs" />
+        <Compile Include="Adaptive/SinkList.fsi" />
+        <Compile Include="Adaptive/SinkList.fs" />
         <Compile Include="Adaptive.Collections.fsi" />
         <Compile Include="Adaptive.Collections.fs" />
         <Compile Include="Adaptive.Changeable.fsi" />
