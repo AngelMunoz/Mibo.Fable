@@ -203,6 +203,7 @@ type LazyConstantValue<'T> =
 type AdaptiveNode<'T> =
   new: compute: (unit -> 'T) -> AdaptiveNode<'T>
   interface IAdaptiveValue<'T>
+  interface ICommittedVersion
 
 /// Internal. Specialized adaptive node over a fixed set of dependencies of
 /// the same type. The values buffer is node-owned and reused across
@@ -210,6 +211,7 @@ type AdaptiveNode<'T> =
 type MapNNode<'T, 'U> =
   new: deps: IAdaptiveValue<'T>[] * compute: ('T[] -> 'U) -> MapNNode<'T, 'U>
   interface IAdaptiveValue<'U>
+  interface ICommittedVersion
 
 /// Internal. Specialized adaptive node that reduces N dependencies using a
 /// binary operation, with no intermediate array. Values are reduced
@@ -221,6 +223,7 @@ type ReduceNode<'T> =
       ReduceNode<'T>
 
   interface IAdaptiveValue<'T>
+  interface ICommittedVersion
 
 /// <summary>
 /// An adaptive value whose content can be replaced. Writes bump the

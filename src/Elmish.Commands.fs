@@ -299,7 +299,7 @@ module Cmd =
           with ex ->
             dispatch(ofError ex)
         }
-        |> Async.Start)
+        |> Async.StartImmediate)
     )
 
   /// <summary>
@@ -333,7 +333,7 @@ module Cmd =
           with ex ->
             ofError ex |> dispatch
         }
-        |> Async.Start)
+        |> Async.StartImmediate)
     )
 
   /// Creates a command from a function returning a JS promise — the
