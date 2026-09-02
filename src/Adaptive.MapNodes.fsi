@@ -59,20 +59,6 @@ type Choose2MapNode<'K, 'V1, 'V2, 'V3 when 'K: equality> =
   interface IDisposable
   interface IMapSinkRegistry
 
-/// <summary>Internal. State of a set-to-map node (one value per key).</summary>
-type internal SetToMapState<'K, 'V, 'T when 'K: equality> = internal {
-  mutable Version: int64
-  mutable Sinks: SinkList
-  mutable DepVersions: int64[]
-  mutable Data: Dictionary<'K, 'V>
-  mutable Journal: SetDelta<'T>
-  mutable Out: MapDelta<'K, 'V>
-}
-
-module internal SetToMapState =
-  val create<'K, 'V, 'T> :
-    depCount: int -> SetToMapState<'K, 'V, 'T> when 'K: equality
-
 /// <summary>
 /// A map from a set: every element maps to an entry. When multiple elements
 /// map to one key, the last value wins (<c>ofASetIgnoreDuplicates</c>); a
@@ -89,20 +75,6 @@ type SetToMapNode<'K, 'V, 'T when 'K: equality and 'T: equality> =
   interface IDisposable
   interface IMapSinkRegistry
 
-/// <summary>Internal. State of a keep-all set-to-map node (per-key value sets).</summary>
-type internal SetToMapKeepAllState<'K, 'V, 'T when 'K: equality> = internal {
-  mutable Version: int64
-  mutable Sinks: SinkList
-  mutable DepVersions: int64[]
-  mutable Data: Dictionary<'K, HashSet<'V>>
-  mutable Journal: SetDelta<'T>
-  mutable Out: MapDelta<'K, HashSet<'V>>
-}
-
-module internal SetToMapKeepAllState =
-  val create<'K, 'V, 'T> :
-    depCount: int -> SetToMapKeepAllState<'K, 'V, 'T> when 'K: equality
-
 /// <summary>
 /// A map from a set of entries: every key keeps ALL its values in a HashSet
 /// (<c>ofASet</c>/<c>ofASetMapped</c> FDA parity). A changed value set emits a
@@ -117,22 +89,6 @@ type SetToMapKeepAllNode<'K, 'V, 'T when 'K: equality and 'T: equality> =
   interface IAdaptiveMap<'K, HashSet<'V>>
   interface IDisposable
   interface IMapSinkRegistry
-
-/// <summary>Internal. State of a map-to-set node (keys or distinct values).</summary>
-type internal MapToSetState<'K, 'V, 'T when 'K: equality and 'T: equality> = internal {
-  mutable Version: int64
-  mutable Sinks: SinkList
-  mutable DepVersions: int64[]
-  mutable Mirror: Dictionary<'K, 'T>
-  mutable Out: RefCountedSet<'T>
-  mutable Journal: MapDelta<'K, 'V>
-  mutable OutDelta: SetDelta<'T>
-}
-
-module internal MapToSetState =
-  val create<'K, 'V, 'T> :
-    depCount: int -> MapToSetState<'K, 'V, 'T>
-      when 'K: equality and 'T: equality
 
 /// <summary>
 /// A set from a map: every entry contributes the selected value (the key for

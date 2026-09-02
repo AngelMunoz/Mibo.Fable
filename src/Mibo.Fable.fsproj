@@ -29,6 +29,12 @@
         <Compile Include="Adaptive.Changeable.fs" />
         <Compile Include="Adaptive.SetNodes.fsi" />
         <Compile Include="Adaptive.SetNodes.fs" />
+        <Compile Include="Adaptive/SetToMapState.fsi" />
+        <Compile Include="Adaptive/SetToMapState.fs" />
+        <Compile Include="Adaptive/SetToMapKeepAllState.fsi" />
+        <Compile Include="Adaptive/SetToMapKeepAllState.fs" />
+        <Compile Include="Adaptive/MapToSetState.fsi" />
+        <Compile Include="Adaptive/MapToSetState.fs" />
         <Compile Include="Adaptive.MapNodes.fsi" />
         <Compile Include="Adaptive.MapNodes.fs" />
         <Compile Include="Adaptive.ListNodes.fsi" />
