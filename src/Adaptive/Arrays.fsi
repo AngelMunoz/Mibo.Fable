@@ -5,4 +5,4 @@ module internal Mibo.Fable.Adaptive.Arrays
 
 /// Reference-dropping fill for <c>len</c> slots of <c>arr</c> from
 /// <c>start</c> (the original's Array.Clear parity helper).
-val clearRange: arr: 'a[] -> start: int -> len: int -> unit
+val inline clearRange: arr: 'a[] -> start: int -> len: int -> unit
