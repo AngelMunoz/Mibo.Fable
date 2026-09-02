@@ -107,34 +107,6 @@ type AdaptiveInit<'Frame> = {
   Disposables: IDisposable list
 }
 
-module AdaptiveInit =
-
-  /// Creates an init from a frame builder — no disposables.
-  let ofFrameBuilder(frameBuilder: unit -> 'Frame) : AdaptiveInit<'Frame> = {
-    FrameBuilder = frameBuilder
-    Disposables = []
-  }
-
-  /// Appends disposables released when the runner is disposed.
-  let withDisposables
-    (disposables: IDisposable list)
-    (init: AdaptiveInit<'Frame>)
-    : AdaptiveInit<'Frame> =
-    {
-      init with
-          Disposables = init.Disposables @ disposables
-    }
-
-  /// Adds a single disposable.
-  let withDisposable
-    (disposable: IDisposable)
-    (init: AdaptiveInit<'Frame>)
-    : AdaptiveInit<'Frame> =
-    {
-      init with
-          Disposables = disposable :: init.Disposables
-    }
-
 type AdaptiveFixedStepConfig = {
   StepSeconds: float32
 
@@ -152,45 +124,6 @@ type AdaptiveProgram<'Frame> = {
 
   FixedStep: AdaptiveFixedStepConfig voption
 }
-
-[<RequireQualifiedAccess>]
-module AdaptiveProgram =
-
-  let mkProgram
-    (init: AdaptiveFrameContext -> AdaptiveInit<'Frame>)
-    (update: AdaptiveContext -> GameTime -> unit)
-    : AdaptiveProgram<'Frame> =
-    {
-      Init = init
-      Update = update
-      Observers = []
-      FixedStep = ValueNone
-    }
-
-  /// Adds an observer notified with the forced frame after every step.
-  let withObserver
-    (factory: unit -> IObserver<struct (GameContext * 'Frame * GameTime)>)
-    (program: AdaptiveProgram<'Frame>)
-    : AdaptiveProgram<'Frame> =
-    {
-      program with
-          Observers = factory :: program.Observers
-    }
-
-  let withFixedStep
-    (cfg: AdaptiveFixedStepConfig)
-    (program: AdaptiveProgram<'Frame>)
-    : AdaptiveProgram<'Frame> =
-    if cfg.StepSeconds <= 0.0f then
-      invalidArg (nameof cfg.StepSeconds) "StepSeconds must be > 0"
-
-    if cfg.MaxStepsPerFrame <= 0 then
-      invalidArg (nameof cfg.MaxStepsPerFrame) "MaxStepsPerFrame must be > 0"
-
-    {
-      program with
-          FixedStep = ValueSome cfg
-    }
 
 type AdaptiveHeadless<'Frame>
   (program: AdaptiveProgram<'Frame>, ?width: int, ?height: int) =

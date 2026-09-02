@@ -80,24 +80,6 @@ type AdaptiveInit<'Frame> = {
   Disposables: IDisposable list
 }
 
-/// <summary>Helpers for building a <see cref="T:Mibo.Fable.Adaptive.AdaptiveInit`1"/>.</summary>
-module AdaptiveInit =
-
-  /// Creates an init from a frame builder - no disposables.
-  val ofFrameBuilder: frameBuilder: (unit -> 'Frame) -> AdaptiveInit<'Frame>
-
-  /// Appends disposables released when the runner is disposed.
-  val withDisposables:
-    disposables: IDisposable list ->
-    init: AdaptiveInit<'Frame> ->
-      AdaptiveInit<'Frame>
-
-  /// Adds a single disposable.
-  val withDisposable:
-    disposable: IDisposable ->
-    init: AdaptiveInit<'Frame> ->
-      AdaptiveInit<'Frame>
-
 /// Fixed-step configuration: converts a variable frame delta into zero or
 /// more fixed-size steps per Step call. The frame is forced once at the end,
 /// so intermediate sub-steps are integrated but not observed.
@@ -132,26 +114,6 @@ type AdaptiveProgram<'Frame> = {
   /// Optional framework-managed fixed-step configuration.
   FixedStep: AdaptiveFixedStepConfig voption
 }
-
-[<RequireQualifiedAccess>]
-module AdaptiveProgram =
-  /// Creates an adaptive program from an Init and an Update phase.
-  val mkProgram:
-    init: (AdaptiveFrameContext -> AdaptiveInit<'Frame>) ->
-    update: (AdaptiveContext -> GameTime -> unit) ->
-      AdaptiveProgram<'Frame>
-
-  /// Adds an observer notified with the forced frame after every step.
-  val withObserver:
-    factory: (unit -> IObserver<struct (GameContext * 'Frame * GameTime)>) ->
-    program: AdaptiveProgram<'Frame> ->
-      AdaptiveProgram<'Frame>
-
-  /// Enables framework-managed fixed-step sub-stepping.
-  val withFixedStep:
-    cfg: AdaptiveFixedStepConfig ->
-    program: AdaptiveProgram<'Frame> ->
-      AdaptiveProgram<'Frame>
 
 /// Runs an adaptive program with explicit frame stepping — the counterpart
 /// of Mibo.Core's AdaptiveHeadless. Same host surface as the MVU

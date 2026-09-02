@@ -111,6 +111,10 @@
         <Compile Include="Elmish.Headless.fs" />
         <Compile Include="Adaptive.Headless.fsi" />
         <Compile Include="Adaptive.Headless.fs" />
+        <Compile Include="Adaptive/AdaptiveInit.fsi" />
+        <Compile Include="Adaptive/AdaptiveInit.fs" />
+        <Compile Include="Adaptive/AdaptiveProgram.fsi" />
+        <Compile Include="Adaptive/AdaptiveProgram.fs" />
         <Compile Include="Layout/Grid2D.fsi" />
         <Compile Include="Layout/Grid2D.fs" />
         <Compile Include="Layout/HexGrid.fsi" />
