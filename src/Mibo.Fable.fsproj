@@ -129,6 +129,8 @@
         <Compile Include="GameContext.fs" />
         <Compile Include="Diagnostics.fsi" />
         <Compile Include="Diagnostics.fs" />
+        <Compile Include="Diagnostics/Diagnostics.fsi" />
+        <Compile Include="Diagnostics/Diagnostics.fs" />
         <Compile Include="Window.fsi" />
         <Compile Include="Window.fs" />
         <Compile Include="Elmish.ProgramTypes.fsi" />
