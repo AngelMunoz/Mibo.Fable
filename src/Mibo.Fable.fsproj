@@ -161,6 +161,8 @@
         <Compile Include="Elmish.Program.fs" />
         <Compile Include="Elmish.Loop.fsi" />
         <Compile Include="Elmish.Loop.fs" />
+        <Compile Include="Elmish/ElmishLoop.fsi" />
+        <Compile Include="Elmish/ElmishLoop.fs" />
         <Compile Include="Elmish.Headless.fsi" />
         <Compile Include="Elmish.Headless.fs" />
         <Compile Include="Elmish/HeadlessProgram.fsi" />
