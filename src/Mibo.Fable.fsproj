@@ -75,6 +75,8 @@
         <Compile Include="Adaptive.ListNodes.fs" />
         <Compile Include="Adaptive.Reductions.fsi" />
         <Compile Include="Adaptive.Reductions.fs" />
+        <Compile Include="Adaptive/AdaptiveReduction.fsi" />
+        <Compile Include="Adaptive/AdaptiveReduction.fs" />
         <Compile Include="Adaptive.ElementSetNode.fsi" />
         <Compile Include="Adaptive.ElementSetNode.fs" />
         <Compile Include="Adaptive.ElementMapNode.fsi" />
