@@ -1,11 +1,14 @@
 .ionide/
 npm/
 
-# Fable-compiled output — never commit generated JS
+# Fable-compiled output — never commit generated JS or TS
 *.fs.js
 *.fs.js.map
+*.fs.ts
+*.fs.ts.map
 *.fable-temp.csproj
 fable_modules/
+dist-ts/
 
 obj/
 bin/
