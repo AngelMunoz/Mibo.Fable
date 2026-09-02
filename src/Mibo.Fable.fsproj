@@ -9,8 +9,18 @@
              Fable cannot compile). Keep Vectors.fs first in compile order. -->
         <Compile Include="Vectors.fsi" />
         <Compile Include="Vectors.fs" />
+        <Compile Include="Adaptive/Arrays.fsi" />
+        <Compile Include="Adaptive/Arrays.fs" />
         <Compile Include="Adaptive.fsi" />
         <Compile Include="Adaptive.fs" />
+        <Compile Include="Adaptive/Posting.fsi" />
+        <Compile Include="Adaptive/Posting.fs" />
+        <Compile Include="Adaptive/Transaction.fsi" />
+        <Compile Include="Adaptive/Transaction.fs" />
+        <Compile Include="Adaptive/AVal.fsi" />
+        <Compile Include="Adaptive/AVal.fs" />
+        <Compile Include="Adaptive/CVal.fsi" />
+        <Compile Include="Adaptive/CVal.fs" />
         <Compile Include="Adaptive.Collections.fsi" />
         <Compile Include="Adaptive.Collections.fs" />
         <Compile Include="Adaptive.Changeable.fsi" />
