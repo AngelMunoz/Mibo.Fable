@@ -113,6 +113,8 @@
         <Compile Include="Elmish.Time.fs" />
         <Compile Include="Elmish.Commands.fsi" />
         <Compile Include="Elmish.Commands.fs" />
+        <Compile Include="Elmish/Cmd.fsi" />
+        <Compile Include="Elmish/Cmd.fs" />
         <Compile Include="Elmish.System.fsi" />
         <Compile Include="Elmish.System.fs" />
         <Compile Include="Elmish/SubId.fsi" />
