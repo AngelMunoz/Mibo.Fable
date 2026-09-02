@@ -21,106 +21,8 @@ open Fable.Core
 // =============================================================================
 
 // =============================================================================
-// Collection contracts (PLAN.md Section 6.9)
+// Shared helpers of the collection nodes.
 // =============================================================================
-
-/// <summary>
-/// An adaptive set: either a changeable source or a derived node.
-/// </summary>
-/// <remarks>
-/// <para>
-/// <c>GetValue</c> returns a transient view of the internal state. The view is
-/// valid only until the next write. Computations consume it; they must not
-/// retain it or mutate it. <c>ASet.force</c> materializes an immutable copy
-/// that is safe to retain; the library never touches a forced value again.
-/// </para>
-/// <para>
-/// Derived sets are disposable: disposal unregisters the node from its
-/// dependencies and stops all delta processing. Disposing a changeable source
-/// is a no-op; sources are owned by the application. Dispose derived nodes
-/// before their consumers. Reading a disposed node throws.
-/// </para>
-/// </remarks>
-type IAdaptiveSet<'T> =
-  inherit IAdaptiveObject
-  inherit IDisposable
-  abstract member GetValue: unit -> IReadOnlySet<'T>
-
-/// <summary>An abbreviation for <see cref="IAdaptiveSet&lt;'T&gt;"/> (FDA <c>aset&lt;'T&gt;</c> parity).</summary>
-type aset<'T> = IAdaptiveSet<'T>
-
-/// <summary>
-/// An adaptive map: either a changeable source or a derived node. See
-/// <see cref="IAdaptiveSet&lt;'T&gt;"/> for the view and disposal contracts.
-/// </summary>
-type IAdaptiveMap<'K, 'V when 'K: equality> =
-  inherit IAdaptiveObject
-  inherit IDisposable
-  abstract member GetValue: unit -> IReadOnlyDictionary<'K, 'V>
-
-/// <summary>An abbreviation for <see cref="IAdaptiveMap&lt;'K,'V&gt;"/> (FDA <c>amap&lt;'K,'V&gt;</c> parity).</summary>
-type amap<'K, 'V when 'K: equality> = IAdaptiveMap<'K, 'V>
-
-/// <summary>
-/// Internal. Receives deltas from a set dependency. The implementation appends
-/// the delta to its journal; processing happens on the next read (drain).
-/// </summary>
-type internal ISetDeltaSink<'T> =
-  abstract member OnDeltas:
-    added: 'T[] * addedCount: int * removed: 'T[] * removedCount: int -> unit
-
-/// <summary>
-/// Internal. Receives deltas from a map dependency. The implementation appends
-/// the delta to its journal; processing happens on the next read (drain).
-/// </summary>
-type internal IMapDeltaSink<'K, 'V> =
-  abstract member OnDeltas:
-    setEntries: struct ('K * 'V)[] *
-    setCount: int *
-    removedKeys: 'K[] *
-    removedCount: int ->
-      unit
-
-/// <summary>Internal. Register/unregister a set delta sink with a dependency.</summary>
-type internal ISetSinkRegistry =
-  abstract member AddSetSink: sink: obj -> unit
-  abstract member RemoveSetSink: sink: obj -> unit
-
-/// <summary>Internal. Register/unregister a map delta sink with a dependency.</summary>
-type internal IMapSinkRegistry =
-  abstract member AddMapSink: sink: obj -> unit
-  abstract member RemoveMapSink: sink: obj -> unit
-
-/// <summary>
-/// An adaptive list: either a changeable source or a derived node. See
-/// <see cref="IAdaptiveSet&lt;'T&gt;"/> for the view and disposal contracts.
-/// Positions in list operations are 0-based and refer to the state as of the
-/// previous operation in the same delta; deltas are applied in order.
-/// </summary>
-type IAdaptiveList<'T> =
-  inherit IAdaptiveObject
-  inherit IDisposable
-  abstract member GetValue: unit -> IReadOnlyList<'T>
-
-/// <summary>An abbreviation for <see cref="IAdaptiveList&lt;'T&gt;"/> (FDA <c>alist&lt;'T&gt;</c> parity).</summary>
-type alist<'T> = IAdaptiveList<'T>
-
-// =============================================================================
-// State holders
-//
-// Mutable-field records: the original's struct holders with byref-into-field
-// mutation become shared mutable objects, so field writes are visible to
-// every holder — the same observable behavior as the original.
-// =============================================================================
-
-/// <summary>Internal. Receives deltas from a list dependency.</summary>
-type internal IListDeltaSink<'T> =
-  abstract member OnDeltas: ops: ListOp<'T>[] * opCount: int -> unit
-
-/// <summary>Internal. Register/unregister a list delta sink with a dependency.</summary>
-type internal IListSinkRegistry =
-  abstract member AddListSink: sink: obj -> unit
-  abstract member RemoveListSink: sink: obj -> unit
 
 /// <summary>
 /// The binary set operation of the two-source set node: difference (left
@@ -775,36 +677,6 @@ module internal Collections =
         =
         target.OnSideDeltas(side, sets, setCount, rems, remCount)
 
-  /// <summary>Internal. State of a two-source set node.</summary>
-  type internal TwoSetState<'T when 'T: equality> = internal {
-    mutable Version: int64
-    mutable Sinks: SinkList
-    mutable DepVersions: int64[]
-    mutable Left: RefCountedSet<'T>
-    mutable Right: RefCountedSet<'T>
-    mutable Out: HashSet<'T>
-    mutable JournalL: SetDelta<'T>
-    mutable JournalR: SetDelta<'T>
-    mutable OutDelta: SetDelta<'T>
-    // Reused scratch for the net-delta post-pass (construction-time
-    // allocation only; zero steady-state allocation).
-    mutable Scratch: HashSet<'T>
-  }
-
-  module internal TwoSetState =
-    let create<'T when 'T: equality>(depCount: int) : TwoSetState<'T> = {
-      Version = 0L
-      Sinks = SinkList.create()
-      DepVersions = Array.zeroCreate depCount
-      Left = RefCountedSet.create()
-      Right = RefCountedSet.create()
-      Out = HashSet<'T>()
-      JournalL = SetDelta.create()
-      JournalR = SetDelta.create()
-      OutDelta = SetDelta.create()
-      Scratch = HashSet<'T>()
-    }
-
   /// <summary>
   /// Process one side's journal of a two-source set node. Returns whether
   /// the output changed.
@@ -1062,39 +934,6 @@ module internal Collections =
   // at least one *Some* argument"); a key with no value on either side is removed
   // without calling it.
   // =============================================================================
-
-  /// <summary>Internal. State of a choose2 map node.</summary>
-  type internal Choose2State<'K, 'V1, 'V2, 'V3 when 'K: equality> = internal {
-    mutable Version: int64
-    mutable Sinks: SinkList
-    mutable DepVersions: int64[]
-    mutable Sides: Dictionary<'K, struct ('V1 voption * 'V2 voption)>
-    mutable Out: Dictionary<'K, 'V3>
-    mutable JournalL: MapDelta<'K, 'V1>
-    mutable JournalR: MapDelta<'K, 'V2>
-    mutable OutDelta: MapDelta<'K, 'V3>
-    // Reused scratch for the net-delta post-pass (construction-time
-    // allocation only; zero steady-state allocation).
-    mutable Scratch: HashSet<'K>
-    mutable Scratch2: HashSet<'K>
-  }
-
-  module internal Choose2State =
-    let create<'K, 'V1, 'V2, 'V3 when 'K: equality>
-      (depCount: int)
-      : Choose2State<'K, 'V1, 'V2, 'V3> =
-      {
-        Version = 0L
-        Sinks = SinkList.create()
-        DepVersions = Array.zeroCreate depCount
-        Sides = Dictionary<'K, struct ('V1 voption * 'V2 voption)>()
-        Out = Dictionary<'K, 'V3>()
-        JournalL = MapDelta.create()
-        JournalR = MapDelta.create()
-        OutDelta = MapDelta.create()
-        Scratch = HashSet<'K>()
-        Scratch2 = HashSet<'K>()
-      }
 
   /// <summary>
   /// Apply one output transition of a choose2 drain: compare with the stored
@@ -1540,31 +1379,6 @@ module internal Collections =
   // semantics).
   // =============================================================================
 
-  /// <summary>
-  /// Internal. One source element's contribution to a collect node: the inner
-  /// adaptive set, its last-seen version, the current content, the pending
-  /// journal, and the registered sink.
-  /// </summary>
-  type internal CollectEntry<'U when 'U: equality> = internal {
-    mutable Node: IAdaptiveSet<'U>
-    mutable Version: int64
-    mutable Content: HashSet<'U>
-    mutable Journal: SetDelta<'U>
-    mutable Sink: obj
-  }
-
-  module internal CollectEntry =
-    let create<'U when 'U: equality>
-      (node: IAdaptiveSet<'U>)
-      : CollectEntry<'U> =
-      {
-        Node = node
-        Version = 0L
-        Content = HashSet<'U>()
-        Journal = SetDelta.create()
-        Sink = null
-      }
-
   /// <summary>Internal. Receives the side-routed deltas of one inner set.</summary>
   type internal ICollectTarget<'T, 'U> =
     abstract member OnInnerDeltas:
@@ -1581,36 +1395,6 @@ module internal Collections =
         (adds: 'U[], addCount: int, rems: 'U[], remCount: int)
         =
         target.OnInnerDeltas(key, adds, addCount, rems, remCount)
-
-  /// <summary>Internal. State of a collect node (PLAN.md Section 7.4).</summary>
-  type internal CollectState<'T, 'U when 'T: equality and 'U: equality> = internal {
-    mutable Version: int64
-    mutable Sinks: SinkList
-    mutable DepVersions: int64[]
-    mutable Journal: SetDelta<'T>
-    mutable Inner: Dictionary<'T, CollectEntry<'U>>
-    mutable Global: RefCountedSet<'U>
-    mutable OutDelta: SetDelta<'U>
-    // Reused scratch for the net-delta pass: prior presence of every
-    // output element touched this batch (construction-time allocation
-    // only; zero steady-state allocation).
-    mutable Scratch: Dictionary<'U, bool>
-  }
-
-  module internal CollectState =
-    let create<'T, 'U when 'T: equality and 'U: equality>
-      (depCount: int)
-      : CollectState<'T, 'U> =
-      {
-        Version = 0L
-        Sinks = SinkList.create()
-        DepVersions = Array.zeroCreate depCount
-        Journal = SetDelta.create()
-        Inner = Dictionary<'T, CollectEntry<'U>>()
-        Global = RefCountedSet.create()
-        OutDelta = SetDelta.create()
-        Scratch = Dictionary<'U, bool>()
-      }
 
   /// <summary>
   /// Drain a collect node: process the source journal (removed elements drop
@@ -1810,30 +1594,6 @@ module internal Collections =
       ctx.TxActive <- wasActive
 
   /// <summary>
-  /// Internal. State of a bind node over a scalar value (PLAN.md Section 7.4):
-  /// one inner set, swapped when the value changes. The content set is the
-  /// output (a single contribution needs no refcounts).
-  /// </summary>
-  type internal BindSetState<'U when 'U: equality> = internal {
-    mutable Version: int64
-    mutable Sinks: SinkList
-    mutable DepVersions: int64[]
-    mutable Journal: SetDelta<'U>
-    mutable Data: HashSet<'U>
-    mutable OutDelta: SetDelta<'U>
-  }
-
-  module internal BindSetState =
-    let create<'U when 'U: equality>(depCount: int) : BindSetState<'U> = {
-      Version = 0L
-      Sinks = SinkList.create()
-      DepVersions = Array.zeroCreate depCount
-      Journal = SetDelta.create()
-      Data = HashSet<'U>()
-      OutDelta = SetDelta.create()
-    }
-
-  /// <summary>
   /// Drain a bind set node: apply the inner journal to the output. Returns
   /// whether the output changed.
   /// </summary>
@@ -1885,29 +1645,6 @@ module internal Collections =
         state.OutDelta.Clear()
     finally
       ctx.TxActive <- wasActive
-
-  /// <summary>
-  /// Internal. State of a bind map node over a scalar value (PLAN.md Section
-  /// 7.4): one inner map, swapped when the value changes.
-  /// </summary>
-  type internal BindMapState<'K, 'V when 'K: equality> = internal {
-    mutable Version: int64
-    mutable Sinks: SinkList
-    mutable DepVersions: int64[]
-    mutable Journal: MapDelta<'K, 'V>
-    mutable Data: Dictionary<'K, 'V>
-    mutable OutDelta: MapDelta<'K, 'V>
-  }
-
-  module internal BindMapState =
-    let create<'K, 'V when 'K: equality>(depCount: int) : BindMapState<'K, 'V> = {
-      Version = 0L
-      Sinks = SinkList.create()
-      DepVersions = Array.zeroCreate depCount
-      Journal = MapDelta.create()
-      Data = Dictionary<'K, 'V>()
-      OutDelta = MapDelta.create()
-    }
 
   /// <summary>
   /// Drain a bind map node: apply the inner journal to the output (equal

@@ -232,7 +232,7 @@ type Choose2MapNode<'K, 'V1, 'V2, 'V3 when 'K: equality>
     right :> IAdaptiveObject
   |]
 
-  let mutable state = Collections.Choose2State.create 2
+  let mutable state = Choose2State.create 2
   let mutable leftSink: obj = null
   let mutable rightSink: obj = null
   let mutable initialized = false
@@ -957,7 +957,7 @@ type CustomMapNode<'K, 'V when 'K: equality>
 /// </summary>
 type BindMapNode<'K, 'V, 'T when 'K: equality>
   (value: IAdaptiveValue<'T>, mapping: 'T -> IAdaptiveMap<'K, 'V>) =
-  let mutable state = Collections.BindMapState.create 1
+  let mutable state = BindMapState.create 1
 
   let mutable inner: IAdaptiveMap<'K, 'V> =
     Unchecked.defaultof<IAdaptiveMap<'K, 'V>>

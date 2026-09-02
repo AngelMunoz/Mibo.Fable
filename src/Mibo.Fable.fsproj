@@ -33,6 +33,8 @@
         <Compile Include="Adaptive/MapDelta.fs" />
         <Compile Include="Adaptive/ListDelta.fsi" />
         <Compile Include="Adaptive/ListDelta.fs" />
+        <Compile Include="Adaptive/Contracts.fsi" />
+        <Compile Include="Adaptive/Contracts.fs" />
         <Compile Include="Adaptive/RefCountedSet.fsi" />
         <Compile Include="Adaptive/RefCountedSet.fs" />
         <Compile Include="Adaptive/SinkList.fsi" />
@@ -43,6 +45,18 @@
         <Compile Include="Adaptive/MapNodeState.fs" />
         <Compile Include="Adaptive/ElementEntry.fsi" />
         <Compile Include="Adaptive/ElementEntry.fs" />
+        <Compile Include="Adaptive/TwoSetState.fsi" />
+        <Compile Include="Adaptive/TwoSetState.fs" />
+        <Compile Include="Adaptive/Choose2State.fsi" />
+        <Compile Include="Adaptive/Choose2State.fs" />
+        <Compile Include="Adaptive/CollectEntry.fsi" />
+        <Compile Include="Adaptive/CollectEntry.fs" />
+        <Compile Include="Adaptive/CollectState.fsi" />
+        <Compile Include="Adaptive/CollectState.fs" />
+        <Compile Include="Adaptive/BindSetState.fsi" />
+        <Compile Include="Adaptive/BindSetState.fs" />
+        <Compile Include="Adaptive/BindMapState.fsi" />
+        <Compile Include="Adaptive/BindMapState.fs" />
         <Compile Include="Adaptive.Collections.fsi" />
         <Compile Include="Adaptive.Collections.fs" />
         <Compile Include="Adaptive.Changeable.fsi" />

@@ -312,7 +312,7 @@ type TwoSourceSetNode<'T when 'T: equality>
     right :> IAdaptiveObject
   |]
 
-  let mutable state = Collections.TwoSetState.create 2
+  let mutable state = TwoSetState.create 2
   let mutable leftSink: obj = null
   let mutable rightSink: obj = null
   let mutable initialized = false
@@ -655,7 +655,7 @@ type CustomSetNode<'T when 'T: equality>
 /// </summary>
 type CollectSetNode<'T, 'U when 'T: equality and 'U: equality>
   (source: IAdaptiveSet<'T>, mapping: 'T -> IAdaptiveSet<'U>) =
-  let mutable state = Collections.CollectState.create 1
+  let mutable state = CollectState.create 1
   let mutable initialized = false
   let mutable disposed = false
 
@@ -675,7 +675,7 @@ type CollectSetNode<'T, 'U when 'T: equality and 'U: equality>
       for x in snapshot do
         let inner = mapping x
         let innerView = inner.GetValue()
-        let entry = Collections.CollectEntry.create inner
+        let entry = CollectEntry.create inner
 
         for u in innerView do
           // The entry's own content is tracked unconditionally: only
@@ -700,7 +700,7 @@ type CollectSetNode<'T, 'U when 'T: equality and 'U: equality>
       (key: 'T, adds: 'U[], addCount: int, rems: 'U[], remCount: int)
       =
       if not disposed then
-        let mutable entry = Unchecked.defaultof<Collections.CollectEntry<'U>>
+        let mutable entry = Unchecked.defaultof<CollectEntry<'U>>
 
         if state.Inner.TryGetValue(key, &entry) then
           Collections.journalAppendSet entry.Journal adds addCount rems remCount
@@ -748,7 +748,7 @@ type CollectSetNode<'T, 'U when 'T: equality and 'U: equality>
             // The pull (and the version getter itself, for poll
             // inners) may have delivered a delta into the dictionary
             // entry: re-read instead of clobbering the stale copy.
-            let mutable e2 = Unchecked.defaultof<Collections.CollectEntry<'U>>
+            let mutable e2 = Unchecked.defaultof<CollectEntry<'U>>
 
             if state.Inner.TryGetValue(x, &e2) then
               e2.Version <- Collections.committedVersion entry.Node
@@ -823,7 +823,7 @@ type CollectSetNode<'T, 'U when 'T: equality and 'U: equality>
 /// </summary>
 type BindSetNode<'T, 'U when 'U: equality>
   (value: IAdaptiveValue<'T>, mapping: 'T -> IAdaptiveSet<'U>) =
-  let mutable state = Collections.BindSetState.create 1
+  let mutable state = BindSetState.create 1
   let mutable inner: IAdaptiveSet<'U> = Unchecked.defaultof<IAdaptiveSet<'U>>
   let mutable hasInner = false
   let mutable innerVersion = 0L
