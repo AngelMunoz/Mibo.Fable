@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ChangelogFile>$(MSBuildThisFileDirectory)../../CHANGELOG.md</ChangelogFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="Conversions.fsi" />
+        <Compile Include="Conversions.fs" />
+        <Compile Include="ThreeBindings.fsi" />
+        <Compile Include="ThreeBindings.fs" />
+        <Compile Include="ThreeHost.fsi" />
+        <Compile Include="ThreeHost.fs" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Mibo.Fable\Mibo.Fable.fsproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Fable.Browser.Dom" />
+        <PackageReference Include="Fable.Core" />
+        <PackageReference Include="Fable.Package.SDK" />
+        <PackageReference Include="Fable.Promise" />
+        <PackageReference Include="FSharp.UMX" />
+    </ItemGroup>
+</Project>

@@ -5,18 +5,14 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="QUnit.fsi" />
-    <Compile Include="QUnit.fs" />
-    <Compile Include="QUnit.Tests.fs" />
-    <Compile Include="Adaptive.Tests.fs" />
-    <Compile Include="MapTests.fs" />
-    <Compile Include="SetTests.fs" />
-    <Compile Include="ListTests.fs" />
-    <Compile Include="ThreeConversions.Tests.fs" />
+    <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />
     <ProjectReference Include="..\src\Mibo.Fable.ThreeJS\Mibo.Fable.ThreeJS.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Browser.Dom" />
     <PackageReference Include="Fable.Core" />
   </ItemGroup>
 </Project>
