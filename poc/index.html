@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mibo.Fable + Phaser 4 POC</title>
+    <style>
+      body { margin: 0; background: #05060c; display: grid; place-items: center; height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      window.__errs = [];
+      window.addEventListener("error", (e) => window.__errs.push(String(e.message || e)));
+      window.addEventListener("unhandledrejection", (e) => window.__errs.push("rej: " + String(e.reason)));
+    </script>
+    <script type="module" src="./Program.fs.js"></script>
+  </body>
+</html>
