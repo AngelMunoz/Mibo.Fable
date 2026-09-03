@@ -41,7 +41,7 @@
     </style>
   </head>
   <body>
-    <div>One simulation, two execution models — the page only paints what each runner publishes. Click a canvas to kick.</div>
+    <div>One simulation, two execution models — each runs in its own web worker at 30 Hz and paints an interpolated 60 fps through OffscreenCanvas; the page only forwards your clicks. Click a canvas to kick.</div>
     <div class="panels">
       <div class="panel">
         <div class="label">MVU — update returns a new model</div>
