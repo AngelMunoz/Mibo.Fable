@@ -12,8 +12,8 @@ Write the game simulation in F# (Elmish/MVU loop, input, layout grids, draw comm
 
 ## How it fits together
 
-- `src/` — the simulation core. The Elmish loop and headless runner live in the `Mibo.Elmish` namespace; input, layout, and the backend-neutral draw DSL in `Mibo.Input`, `Mibo.Layout`, `Mibo.Layout3D`, `Mibo.Elmish.Graphics`. Vectors are plain F# structs (`Mibo.Vectors`), chosen over `System.Numerics` so the whole core compiles to JS.
-- `Mibo.Fable.Exports` (in `src/Mibo.Fable.fs`) — the small wrapper JavaScript hosts use to drive the headless runner: `createRunnerWithTick`, `stepFrame`, `dispatch`, `model`, and friends.
+- `src/Mibo.Fable/` — the simulation core. The Elmish loop and headless runner live in the `Mibo.Elmish` namespace; input, layout, and the backend-neutral draw DSL in `Mibo.Input`, `Mibo.Layout`, `Mibo.Layout3D`, `Mibo.Elmish.Graphics`. Vectors are plain F# structs (`Mibo.Vectors`), chosen over `System.Numerics` so the whole core compiles to JS. Renderer packages (`Mibo.Fable.Threejs`, ...) live next to it as sibling projects under `src/`.
+- `Mibo.Fable.Exports` (in `src/Mibo.Fable/Mibo.Fable.fs`) — the small wrapper JavaScript hosts use to drive the headless runner: `createRunnerWithTick`, `stepFrame`, `dispatch`, `model`, and friends.
 - `demo/` — a Vite page that steps a bouncing-ball simulation through the headless runner on each `requestAnimationFrame` and paints the model with Canvas2D. No rendering library involved.
 
 F# game code should use the `Mibo.*` namespaces directly and skip the exports wrapper — Fable compiles it all together.
@@ -33,12 +33,12 @@ let rec loop () =
 
 ## Origin
 
-Mibo.Fable started as a web-first port of [Mibo](https://github.com/AngelMunoz/Mibo)'s simulation core (the Elmish loop, input, layout, and draw command types from `Mibo.Core`). It is maintained separately from Mibo on purpose: Mibo targets native backends (raylib, MonoGame), while Mibo.Fable targets the web and adapts the core to Fable's runtime — own vector types, no .NET-only primitives. See [AGENTS.md](AGENTS.md) for the constraints that keep `src/` Fable-compatible.
+Mibo.Fable started as a web-first port of [Mibo](https://github.com/AngelMunoz/Mibo)'s simulation core (the Elmish loop, input, layout, and draw command types from `Mibo.Core`). It is maintained separately from Mibo on purpose: Mibo targets native backends (raylib, MonoGame), while Mibo.Fable targets the web and adapts the core to Fable's runtime — own vector types, no .NET-only primitives. See [AGENTS.md](AGENTS.md) for the constraints that keep `src/Mibo.Fable/` Fable-compatible.
 
 ## Build and demo
 
 | Script            | What it does                                                     |
 | ----------------- | ---------------------------------------------------------------- |
-| `pnpm build`      | Compiles the library to JavaScript (`src/Mibo.Fable.fs.js` + `src/fable_modules/`) |
+| `pnpm build`      | Compiles the library to JavaScript (`src/Mibo.Fable/Mibo.Fable.fs.js` + `src/Mibo.Fable/fable_modules/`) |
 | `pnpm demo`       | Watches the demo and serves it with Vite at http://localhost:5173 |
 | `pnpm build:demo` | Builds the demo production bundle in `demo/dist/`                 |

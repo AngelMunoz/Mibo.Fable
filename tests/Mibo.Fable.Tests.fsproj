@@ -14,7 +14,7 @@
     <Compile Include="ListTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\Mibo.Fable.fsproj" />
+    <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />
     <PackageReference Include="Fable.Core" />
   </ItemGroup>
 </Project>

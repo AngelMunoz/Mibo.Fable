@@ -11,7 +11,7 @@
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\Mibo.Fable.fsproj" />
+    <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Dom" />

@@ -1,4 +1,5 @@
 /// <summary>Pure playback functions for <see cref="T:Mibo.Animation.Animation3DState"/>.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Animation.Animation3DState
 
 /// Starts a clip by name at its first frame with the given frames-per-second.

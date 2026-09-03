@@ -1,4 +1,5 @@
 /// <summary>Convenience builders for <see cref="T:Mibo.Elmish.Graphics3D.DirectionalLight3D"/>.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Elmish.Graphics3D.DirectionalLight3D
 
 open Mibo.Vectors

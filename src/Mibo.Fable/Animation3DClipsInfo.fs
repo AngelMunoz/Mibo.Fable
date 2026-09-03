@@ -1,3 +1,4 @@
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Animation.Animation3DClipsInfo
 
 open System.Collections.Generic

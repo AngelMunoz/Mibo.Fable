@@ -1,4 +1,5 @@
 /// Functions for accessing and managing services in the GameContext.
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Elmish.GameContext
 
 val internal create: width: int * height: int -> GameContext

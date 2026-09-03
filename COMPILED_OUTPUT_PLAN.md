@@ -69,20 +69,20 @@ after a type in the same file gets the `Module` infix.
 2. `package.json` scripts:
 
    ```json
-   "build:ts": "dotnet fable src --lang ts --sourceMaps -o dist-ts",
-   "clean:src": "dotnet fable clean src --yes",
+   "build:ts": "dotnet fable src/Mibo.Fable --lang ts --sourceMaps -o dist-ts",
+   "clean:src": "dotnet fable clean src/Mibo.Fable --yes",
    "clean:ts": "dotnet fable clean dist-ts --yes -e .ts",
    "build:all": "pnpm build && pnpm build:ts"
    ```
 
-3. JS stays in `src/` (workspace default; tests and demo use it). TS goes to
+3. JS stays in `src/Mibo.Fable/` (workspace default; tests and demo use it). TS goes to
    `dist-ts/`. Never chain both builds into one folder: a TS build into
-   `src/` removes the JS runtime library.
+   `src/Mibo.Fable/` removes the JS runtime library.
 4. Any clean also deletes `fable_modules`. Build again after every clean.
 5. When CI exists: build both languages, run `pnpm test`.
 
 Acceptance: fresh clone, `pnpm install`, `pnpm build`, `pnpm test` green, no
-`../tests` imports in `src/*.fs.js`.
+`../tests` imports in `src/Mibo.Fable/*.fs.js`.
 
 ## Phase 1 — one module per file
 
@@ -99,13 +99,13 @@ Acceptance: fresh clone, `pnpm install`, `pnpm build`, `pnpm test` green, no
 5. Every file modification uses the EDIT tool after Reading the target
    region (binding rule 6). No shell text tools.
 6. Run `dotnet fantomas .` and `pnpm test` after each file group.
-6. All adaptive files live in `src/Adaptive/`. No `Adaptive.` prefix on file
+6. All adaptive files live in `src/Mibo.Fable/Adaptive/`. No `Adaptive.` prefix on file
    names: `Adaptive/Arrays.fs`, not `Adaptive.Arrays.fs`. File names are free
    in F#; module names are unchanged.
 
 ### File map
 
-Final paths under `src/Adaptive/` unless noted.
+Final paths under `src/Mibo.Fable/Adaptive/` unless noted.
 
 | Source file              | New files                                                              |
 | ------------------------ | ---------------------------------------------------------------------- |
@@ -189,7 +189,7 @@ and call sites stay unchanged.
 
 Acceptance:
 
-- `grep -c "Module_" src/*.fs.js` returns 0.
+- `grep -c "Module_" src/Mibo.Fable/*.fs.js` returns 0.
 - Public names carry no sub-module prefix (`empty` instead of `ASet_empty`).
 - `pnpm test` green, `pnpm build:ts` green, demo builds.
 
@@ -226,10 +226,10 @@ Internal plumbing may keep hashes.
 | TS build           | `pnpm build:ts`                                          | 0 errors |
 | Tests              | `pnpm test`                                              | green (58) |
 | Demo               | `pnpm build:demo`                                        | green    |
-| `Module_` mangles  | `grep -c "Module_" src/*.fs.js`                          | 0        |
+| `Module_` mangles  | `grep -c "Module_" src/Mibo.Fable/*.fs.js`                          | 0        |
 | Sub-module prefixes| `grep -E "^export function (ASet\|CSet\|AMap\|CMap\|AList\|CList\|AVal\|CVal)_"` | 0 |
 | Public hash names  | grep entry and Api exports for `_[0-9A-Z]{5}`            | 0        |
-| Library path       | `grep "../tests/fable_modules" src/*.fs.js`              | 0        |
+| Library path       | `grep "../tests/fable_modules" src/Mibo.Fable/*.fs.js`              | 0        |
 
 Every phase ends with this matrix. Each phase ships value on its own.
 

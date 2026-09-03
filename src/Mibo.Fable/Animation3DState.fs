@@ -1,3 +1,4 @@
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Animation.Animation3DState
 
 /// <summary>Create a new animation state starting on the named clip.</summary>

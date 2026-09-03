@@ -1,3 +1,4 @@
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Elmish.Graphics3D.DirectionalLight3D
 
 open Mibo.Vectors

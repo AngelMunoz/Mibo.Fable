@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Mibo.Fable.fsproj" />
+    <Project Path="src/Mibo.Fable/Mibo.Fable.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Mibo.Fable.Tests.fsproj" />

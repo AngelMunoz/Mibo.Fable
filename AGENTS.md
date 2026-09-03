@@ -20,7 +20,7 @@ General setup and usage instructions are in [README.md](README.md). Template det
 
 ## Architecture
 
-- `src/` — the simulation core published as the `Mibo.Fable` package
+- `src/Mibo.Fable/` — the simulation core published as the `Mibo.Fable` package. Renderer packages (`Mibo.Fable.Threejs`, `Mibo.Fable.Phaser`, ...) are sibling projects under `src/` that reference this one, mirroring how `Mibo.MonoGame`/`Mibo.Raylib` sit next to `Mibo.Core` upstream.
   - `Vectors.fs` — own `Vector2/3/4` structs. **Must stay first in the compile order** in `Mibo.Fable.fsproj`; everything else depends on it.
   - `Adaptive.fs` — the scalar core under namespace `Mibo.Fable.Adaptive`: `CVal`/`AVal`, transactions, posting, dependency collector. A web port of `Mibo.Adaptive`'s `Core/Library.fs` (pull-lazy dependency graph: writes bump versions, reads version-check and recompute at most once per change). Loads right after `Vectors.fs`.
   - `Adaptive.Collections.fs` + node files — the adaptive collections (`aset`/`amap`/`alist`, `cset`/`cmap`/`clist`) as a web port of `Mibo.Adaptive`'s `Core/Collections/*`: journals, delta sinks, refcounted sets, two-source algebra, reductions, per-element `*A` nodes. The public surface lives in `Adaptive.Api.fs` (`ASet`/`AMap`/`AList`/`CSet`/`CMap`/`CList`).
@@ -37,7 +37,7 @@ General setup and usage instructions are in [README.md](README.md). Template det
 
 ## Web constraints (keep the core Fable-compatible)
 
-Everything in `src/` must compile with the Fable compiler. Do not reintroduce .NET-only APIs:
+Everything in `src/Mibo.Fable/` must compile with the Fable compiler. Do not reintroduce .NET-only APIs:
 
 - `System.Numerics` — use `Mibo.Vectors` instead. Fable cannot resolve `Vector3`/`Vector4` at all.
 - `System.Buffers` (ArrayPool), `Span`, and byref array access (`let x = &arr.[i]`) — use plain arrays, `Array.blit`, and direct index writes.
@@ -74,7 +74,7 @@ Fable compiles F# to JS with a subset of .NET semantics. These behave differentl
 | Command           | Description                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------- |
 | `pnpm install`    | Installs node dependencies and restores dotnet tools (postinstall)                 |
-| `pnpm build`      | Compiles the library to JavaScript (`src/Mibo.Fable.fs.js` + `src/fable_modules/`) |
+| `pnpm build`      | Compiles the library to JavaScript (`src/Mibo.Fable/Mibo.Fable.fs.js` + `src/Mibo.Fable/fable_modules/`) |
 | `pnpm demo`       | Watches the demo and serves it with Vite (http://localhost:5173)                   |
 | `pnpm build:demo` | Builds the demo production bundle in `demo/dist/`                                  |
 | `pnpm test`       | Compiles and runs the smoke suites in `tests/`                                     |

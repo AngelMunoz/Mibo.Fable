@@ -1,4 +1,5 @@
 /// <summary>Convenience constructors and conversions for <see cref="T:Mibo.Color"/>.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Color
 
 open Mibo.Vectors

@@ -1,4 +1,5 @@
 /// <summary>Builder helpers for <see cref="T:Mibo.Elmish.GameConfig"/>.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Elmish.GameConfig
 
 open Mibo.Windowing

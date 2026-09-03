@@ -4,7 +4,7 @@ If you are looking for documentation about the project, you should refer to the 
 
 ## Architecture
 
-- `src/` contains the source code of your binding
+- `src/Mibo.Fable/` contains the source code of the `Mibo.Fable` package. Sibling packages (for example a future `Mibo.Fable.Threejs`) live next to it under `src/`
 - `demo/` contains a demo application that you can use to test your binding. It can also be publish on GitHub pages to have an interactive demo.
 
 The build process is driven by the scripts in [package.json](./package.json), using pnpm:
@@ -12,7 +12,7 @@ The build process is driven by the scripts in [package.json](./package.json), us
 | Script             | Description                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------ |
 | `pnpm install`     | Installs the node dependencies and restores the local dotnet tools (via `postinstall`) |
-| `pnpm build`       | Compiles the library to JavaScript (`src/Mibo.Fable.fs.js` + `src/fable_modules/`)    |
+| `pnpm build`       | Compiles the library to JavaScript (`src/Mibo.Fable/Mibo.Fable.fs.js` + `src/Mibo.Fable/fable_modules/`)    |
 | `pnpm watch`       | Compiles the library in watch mode                                                    |
 | `pnpm demo`        | Watches the demo (and the library) and launches the Vite dev server                   |
 | `pnpm build:demo`  | Builds the demo production bundle in `demo/dist/`                                     |
@@ -27,7 +27,7 @@ The build process is driven by the scripts in [package.json](./package.json), us
 
     ```bash
     # For the main project
-    dotnet add src package Fable.Core
+    dotnet add src/Mibo.Fable package Fable.Core
     # For the demo project
     dotnet add demo package Fable.Core
     ```

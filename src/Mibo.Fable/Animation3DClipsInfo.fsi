@@ -1,4 +1,5 @@
 /// <summary>Functions for building and querying <see cref="T:Mibo.Animation.Animation3DClipsInfo"/>.</summary>
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Mibo.Animation.Animation3DClipsInfo
 
 /// Builds clip info from (name, keyFrameCount) pairs.
