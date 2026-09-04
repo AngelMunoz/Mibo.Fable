@@ -1,11 +1,13 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Mibo.Fable/Mibo.Fable.fsproj" />
+    <Project Path="src/Mibo.Fable.ThreeJS/Mibo.Fable.ThreeJS.fsproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Mibo.Fable.Tests.fsproj" />
   </Folder>
   <Folder Name="/demo/">
     <Project Path="demo/Demo.fsproj" />
+    <Project Path="demo-three/DemoThree.fsproj" />
   </Folder>
 </Solution>

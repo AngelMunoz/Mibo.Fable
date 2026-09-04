@@ -8,10 +8,14 @@
     <Compile Include="Worker.fs" />
     <Compile Include="MvuWorker.fs" />
     <Compile Include="AdaptiveWorker.fs" />
+    <Compile Include="MvuThreeWorker3D.fs" />
+    <Compile Include="AdaptiveThreeWorker3D.fs" />
+    <Compile Include="ThreeMain.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />
+    <ProjectReference Include="..\src\Mibo.Fable.ThreeJS\Mibo.Fable.ThreeJS.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Browser.Dom" />

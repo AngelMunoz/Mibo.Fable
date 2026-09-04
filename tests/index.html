@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mibo.Fable browser tests</title>
+  </head>
+  <body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    <script type="module">
+      // The config must exist before QUnit loads, so QUnit adopts the
+      // autostart setting instead of running on an empty registry.
+      globalThis.QUnit = { config: { autostart: false } };
+
+      const [{ QUnit }, files] = await Promise.all([
+        import("qunit"),
+        fetch("/__qunit-tests__/files").then((res) => {
+          if (!res.ok) throw new Error(`file list request failed: ${res.status}`);
+          return res.json();
+        }),
+      ]);
+
+      window.__failures = [];
+      QUnit.on("testEnd", (test) => {
+        if (test.status !== "failed") {
+          return;
+        }
+        const messages = test.assertions
+          .filter((a) => !a.passed)
+          .map((a) => a.message);
+        window.__failures.push({ name: test.fullName, messages });
+      });
+      QUnit.on("runEnd", (details) => {
+        window.__runEnd = {
+          status: details.status,
+          counts: details.testCounts,
+          runtime: details.runtime,
+          failures: window.__failures,
+        };
+        document.title = "RUN_END " + details.status;
+      });
+
+      for (const file of files) {
+        try {
+          await import(/* @vite-ignore */ file);
+        } catch (err) {
+          window.__failures.push({
+            name: file,
+            messages: ["failed to import: " + (err?.message ?? err)],
+          });
+        }
+      }
+      QUnit.start();
+    </script>
+  </body>
+</html>

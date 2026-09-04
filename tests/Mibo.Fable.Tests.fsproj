@@ -12,9 +12,15 @@
     <Compile Include="MapTests.fs" />
     <Compile Include="SetTests.fs" />
     <Compile Include="ListTests.fs" />
+    <Compile Include="ThreeConversions.Tests.fs" />
+    <Compile Include="ThreeBindings.Tests.fs" />
+    <Compile Include="ThreeHost.Tests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />
+    <ProjectReference Include="..\src\Mibo.Fable.ThreeJS\Mibo.Fable.ThreeJS.fsproj" />
+    <PackageReference Include="Fable.Browser.Event" />
     <PackageReference Include="Fable.Core" />
+    <PackageReference Include="Fable.Promise" />
   </ItemGroup>
 </Project>

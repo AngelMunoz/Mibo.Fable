@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mibo.Fable - Canvas2D demo</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: #0b0e13;
+        color: #e6edf3;
+        font-family: monospace;
+      }
+      .panels {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .panel .label {
+        font-weight: bold;
+      }
+      canvas {
+        border: 1px solid #2a3038;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div>One simulation, two execution models — each runs in its own web worker at 30 Hz and paints an interpolated 60 fps through OffscreenCanvas; the page only forwards your clicks. Click a canvas to kick.</div>
+    <div class="panels">
+      <div class="panel">
+        <div class="label">MVU — update returns a new model</div>
+        <canvas id="stage-mvu" width="480" height="320"></canvas>
+      </div>
+      <div class="panel">
+        <div class="label">Signals — update mutates roots, force publishes the frame</div>
+        <canvas id="stage-adaptive" width="480" height="320"></canvas>
+      </div>
+    </div>
+    <script type="module" src="/Main.fs.js"></script>
+  </body>
+</html>

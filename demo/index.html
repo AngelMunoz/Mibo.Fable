@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mibo.Fable - Demo</title>
+    <title>Mibo.Fable - Demos</title>
     <style>
       body {
         margin: 0;
@@ -13,45 +13,20 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 12px;
+        gap: 16px;
         background: #0b0e13;
         color: #e6edf3;
         font-family: monospace;
       }
-      .panels {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .panel {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-      }
-      .panel .label {
-        font-weight: bold;
-      }
-      canvas {
-        border: 1px solid #2a3038;
-        border-radius: 6px;
-        cursor: pointer;
+      a {
+        color: #4fc3f7;
+        font-size: 18px;
       }
     </style>
   </head>
   <body>
-    <div>One simulation, two execution models — each runs in its own web worker at 30 Hz and paints an interpolated 60 fps through OffscreenCanvas; the page only forwards your clicks. Click a canvas to kick.</div>
-    <div class="panels">
-      <div class="panel">
-        <div class="label">MVU — update returns a new model</div>
-        <canvas id="stage-mvu" width="480" height="320"></canvas>
-      </div>
-      <div class="panel">
-        <div class="label">Signals — update mutates roots, force publishes the frame</div>
-        <canvas id="stage-adaptive" width="480" height="320"></canvas>
-      </div>
-    </div>
-    <script type="module" src="/Main.fs.js"></script>
+    <h1>Mibo.Fable demos</h1>
+    <a href="/canvas.html">Canvas2D — two workers paint through OffscreenCanvas</a>
+    <a href="/three.html">ThreeJS — spinning cubes on the main thread and in workers</a>
   </body>
 </html>
