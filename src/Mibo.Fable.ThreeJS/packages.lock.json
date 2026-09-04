@@ -64,16 +64,6 @@
           "Fable.Core": "3.2.8"
         }
       },
-      "Fable.Browser.Event": {
-        "type": "Transitive",
-        "resolved": "1.7.0",
-        "contentHash": "x+wqXQK0l4VlCnELDp68GC/mZAx6NbicDxYPliyAoNq8RPNDeR3R782icNwI5YmA+ufq11XvG6w1JjsL/ldy7w==",
-        "dependencies": {
-          "FSharp.Core": "4.7.2",
-          "Fable.Browser.Gamepad": "1.3.0",
-          "Fable.Core": "3.2.8"
-        }
-      },
       "Fable.Browser.Gamepad": {
         "type": "Transitive",
         "resolved": "1.3.0",
@@ -100,6 +90,17 @@
           "Fable.Core": "[5.2.0, )",
           "Fable.Package.SDK": "[1.4.0, )",
           "Fable.Promise": "[3.2.0, )"
+        }
+      },
+      "Fable.Browser.Event": {
+        "type": "CentralTransitive",
+        "requested": "[1.7.0, )",
+        "resolved": "1.7.0",
+        "contentHash": "x+wqXQK0l4VlCnELDp68GC/mZAx6NbicDxYPliyAoNq8RPNDeR3R782icNwI5YmA+ufq11XvG6w1JjsL/ldy7w==",
+        "dependencies": {
+          "FSharp.Core": "4.7.2",
+          "Fable.Browser.Gamepad": "1.3.0",
+          "Fable.Core": "3.2.8"
         }
       }
     }

@@ -19,6 +19,8 @@
   <ItemGroup>
     <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />
     <ProjectReference Include="..\src\Mibo.Fable.ThreeJS\Mibo.Fable.ThreeJS.fsproj" />
+    <PackageReference Include="Fable.Browser.Event" />
     <PackageReference Include="Fable.Core" />
+    <PackageReference Include="Fable.Promise" />
   </ItemGroup>
 </Project>

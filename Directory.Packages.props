@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Fable.Browser.Dom" Version="2.20.0" />
+    <PackageVersion Include="Fable.Browser.Event" Version="1.7.0" />
     <PackageVersion Include="Fable.Core" Version="5.2.0" />
     <PackageVersion Include="Fable.Package.SDK" Version="1.4.0" />
     <PackageVersion Include="Fable.Promise" Version="3.2.0" />
