@@ -13,17 +13,26 @@ open Mibo.Fable.ThreeJS.ThreeHost
 let private getCanvas(id: string) : HTMLCanvasElement =
   Browser.Dom.document.getElementById id :?> HTMLCanvasElement
 
-let private makeCubeScene (host: ThreeHost) (hex: int) : obj =
-  let ambient = newAmbientLight 0xffffff 0.9
-  let dir = newDirectionalLight 0xffffff 1.2
-  setPosition dir 2.0 3.0 4.0
-  addToScene host.Scene ambient
-  addToScene host.Scene dir
-  let geometry = newBoxGeometry 1.4 1.4 1.4
-  let material = newMeshStandardMaterial hex 0.6 0.1
-  let mesh = newMesh geometry material
-  setPosition mesh 0.0 0.0 0.0
-  addToScene host.Scene mesh
+let private makeCubeScene (host: ThreeHost) (hex: int) : Mesh =
+  let ambient = AmbientLight(0xffffff, 0.9)
+  let dir = DirectionalLight(0xffffff, 1.2)
+  dir.position.set(2.0, 3.0, 4.0)
+  host.Scene.add(ambient :> Object3D)
+  host.Scene.add(dir :> Object3D)
+  let geometry = new BoxGeometry(1.4, 1.4, 1.4)
+
+  let material =
+    new MeshStandardMaterial(
+      {
+        color = hex
+        roughness = 0.6
+        metalness = 0.1
+      }
+    )
+
+  let mesh = Mesh(geometry :> BufferGeometry, material :> Material)
+  mesh.position.set(0.0, 0.0, 0.0)
+  host.Scene.add(mesh :> Object3D)
   mesh
 
 type Msg =
@@ -77,7 +86,7 @@ let mvuRunner =
   createRunnerWithTick initModel updateModel (fun dtMs -> Tick dtMs) 480 320
 
 let renderMvu(model: Model) : unit =
-  setRotation mvuMesh (model.Angle * 0.5) model.Angle 0.0
+  mvuMesh.rotation.set(model.Angle * 0.5, model.Angle, 0.0)
   render mvuHost
 
 onCanvasClick mvuHost (fun () -> dispatch Kick mvuRunner) |> ignore
@@ -138,7 +147,7 @@ let adaptiveMesh = makeCubeScene adaptiveHost (colorToHexRgb Color.Green)
 let adaptiveRunner = createAdaptiveRunner initAdaptive updateAdaptive 480 320
 
 let renderAdaptive(frame: RenderFrame) : unit =
-  setRotation adaptiveMesh (frame.Angle * 0.5) frame.Angle 0.0
+  adaptiveMesh.rotation.set(frame.Angle * 0.5, frame.Angle, 0.0)
   render adaptiveHost
 
 onCanvasClick adaptiveHost (fun () ->
@@ -248,14 +257,19 @@ onCanvasClick adaptiveWorkerHost (fun () ->
 |> ignore
 
 startLoop(fun _dt ->
-  setRotation mvuWorkerMesh (mvuWorkerSnap.Angle * 0.5) mvuWorkerSnap.Angle 0.0
+  mvuWorkerMesh.rotation.set(
+    mvuWorkerSnap.Angle * 0.5,
+    mvuWorkerSnap.Angle,
+    0.0
+  )
+
   render mvuWorkerHost
 
-  setRotation
-    adaptiveWorkerMesh
-    (adaptiveWorkerSnap.Angle * 0.5)
-    adaptiveWorkerSnap.Angle
+  adaptiveWorkerMesh.rotation.set(
+    adaptiveWorkerSnap.Angle * 0.5,
+    adaptiveWorkerSnap.Angle,
     0.0
+  )
 
   render adaptiveWorkerHost)
 |> ignore

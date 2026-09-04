@@ -13,6 +13,7 @@
     <Compile Include="SetTests.fs" />
     <Compile Include="ListTests.fs" />
     <Compile Include="ThreeConversions.Tests.fs" />
+    <Compile Include="ThreeBindings.Tests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\Mibo.Fable\Mibo.Fable.fsproj" />

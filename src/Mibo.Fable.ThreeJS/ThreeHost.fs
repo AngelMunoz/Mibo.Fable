@@ -48,9 +48,9 @@ type private ListenerHandle(target: obj, name: string, handler: obj) =
 
 type ThreeHost
   (
-    renderer: obj,
-    scene: obj,
-    camera: obj,
+    renderer: WebGLRenderer,
+    scene: Scene,
+    camera: PerspectiveCamera,
     canvas: Browser.Types.HTMLCanvasElement,
     width: int,
     height: int
@@ -62,7 +62,7 @@ type ThreeHost
   member _.Width = width
   member _.Height = height
 
-  member _.Dispose() : unit = disposeRenderer renderer
+  member _.Dispose() : unit = renderer.dispose()
 
   interface IDisposable with
     member this.Dispose() = this.Dispose()
@@ -79,28 +79,33 @@ let create(options: ThreeHostOptions) : ThreeHost =
   let safeWidth = if width <= 0 then 480 else width
   let safeHeight = if height <= 0 then 320 else height
 
-  let renderer: obj = newWebGLRenderer canvas options.Antialias
-  let scene: obj = newScene()
+  let renderer =
+    new WebGLRenderer(
+      {
+        canvas = canvas
+        antialias = options.Antialias
+      }
+    )
 
+  let scene = Scene()
   let aspect = float safeWidth / float safeHeight
-  let camera: obj = newPerspectiveCamera 75.0 aspect 0.1 1000.0
-
-  setClearColor renderer options.ClearColor options.ClearAlpha
-  setPixelRatio renderer (devicePixelRatio())
-  setRendererSize renderer (float safeWidth) (float safeHeight) false
-  setPosition camera 0.0 0.0 5.0
-  lookAt camera 0.0 0.0 0.0
+  let camera = PerspectiveCamera(75.0, aspect, 0.1, 1000.0)
+  renderer.setClearColor(options.ClearColor, options.ClearAlpha)
+  renderer.setPixelRatio(devicePixelRatio())
+  renderer.setSize(float safeWidth, float safeHeight, false)
+  camera.position.set(0.0, 0.0, 5.0)
+  camera.lookAt(0.0, 0.0, 0.0)
   new ThreeHost(renderer, scene, camera, canvas, safeWidth, safeHeight)
 
 let render(host: ThreeHost) : unit =
-  renderScene host.Renderer host.Scene host.Camera
+  host.Renderer.render(host.Scene, host.Camera :> Camera)
 
 let resize (host: ThreeHost) (width: int) (height: int) : unit =
   if width > 0 && height > 0 then
-    setRendererSize host.Renderer (float width) (float height) false
+    host.Renderer.setSize(float width, float height, false)
 
 let setClearColor (host: ThreeHost) (hex: int) (alpha: float) : unit =
-  setClearColor host.Renderer hex alpha
+  host.Renderer.setClearColor(hex, alpha)
 
 let stepMvu
   (host: ThreeHost)
@@ -163,4 +168,5 @@ let onKeyDown(handler: string -> unit) : IDisposable =
   addListener (Browser.Dom.window |> unbox) "keydown" wrapped
   new ListenerHandle(Browser.Dom.window |> unbox, "keydown", wrapped)
 
-let loadTexture(url: string) : JS.Promise<obj> = loadTextureAsync url
+let loadTexture(url: string) : JS.Promise<Texture> =
+  TextureLoader().loadAsync(url)

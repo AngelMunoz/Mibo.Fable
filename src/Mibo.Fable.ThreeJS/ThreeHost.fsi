@@ -4,27 +4,28 @@ module Mibo.Fable.ThreeJS.ThreeHost
 open System
 open Fable.Core
 open Mibo.Elmish
+open Mibo.Fable.ThreeJS.Bindings
 
 /// <summary>Opaque handle to a three.js renderer, scene, and camera.</summary>
 [<Class>]
 type ThreeHost =
   new:
-    renderer: obj *
-    scene: obj *
-    camera: obj *
+    renderer: WebGLRenderer *
+    scene: Scene *
+    camera: PerspectiveCamera *
     canvas: Browser.Types.HTMLCanvasElement *
     width: int *
     height: int ->
       ThreeHost
 
-  /// <summary>The three.js WebGLRenderer handle.</summary>
-  member Renderer: obj
+  /// <summary>The three.js WebGLRenderer.</summary>
+  member Renderer: WebGLRenderer
 
-  /// <summary>The three.js Scene handle.</summary>
-  member Scene: obj
+  /// <summary>The three.js Scene.</summary>
+  member Scene: Scene
 
-  /// <summary>The three.js camera handle.</summary>
-  member Camera: obj
+  /// <summary>The three.js camera.</summary>
+  member Camera: PerspectiveCamera
 
   /// <summary>The canvas the renderer draws to.</summary>
   member Canvas: Browser.Types.HTMLCanvasElement
@@ -104,5 +105,5 @@ val onCanvasClick: host: ThreeHost -> handler: (unit -> unit) -> IDisposable
 /// <summary>Attaches a keydown handler to the window. The handler gets the key string.</summary>
 val onKeyDown: handler: (string -> unit) -> IDisposable
 
-/// <summary>Loads a texture from a URL. Resolves with a texture handle.</summary>
-val loadTexture: url: string -> JS.Promise<obj>
+/// <summary>Loads a texture from a URL. Resolves with the texture.</summary>
+val loadTexture: url: string -> JS.Promise<Texture>
