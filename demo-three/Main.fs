@@ -1,6 +1,7 @@
 module DemoThree.Main
 
 open Browser.Types
+open Fable.Core
 open Mibo
 open Mibo.Elmish
 open Mibo.Fable.Exports
@@ -145,3 +146,116 @@ onCanvasClick adaptiveHost (fun () ->
 |> ignore
 
 startAdaptiveLoop adaptiveHost adaptiveRunner 16.6 renderAdaptive |> ignore
+
+// ── Worker-driven cubes: sim runs in a worker, render stays on main ─────────
+// Workers post plain snapshots (angle, speed, frames, kicks). three.js
+// handles never cross threads: each worker cube has its own host and mesh
+// on the main thread, updated from the latest snapshot each frame.
+
+type IWorkerMessageEvent =
+  abstract data: obj
+
+type ISimWorker =
+  abstract postMessage: data: obj -> unit
+  abstract onmessage: (IWorkerMessageEvent -> unit) with get, set
+
+[<Emit("new Worker(new URL('./MvuThreeWorker.fs.js', import.meta.url), { type: 'module' })")>]
+let createMvuThreeWorker() : ISimWorker = jsNative
+
+[<Emit("new Worker(new URL('./AdaptiveThreeWorker.fs.js', import.meta.url), { type: 'module' })")>]
+let createAdaptiveThreeWorker() : ISimWorker = jsNative
+
+type SnapshotIn =
+  abstract kind: string
+  abstract angle: float
+  abstract speed: float
+  abstract frames: int
+  abstract kicks: int
+
+let mvuWorkerCanvas = getCanvas "stage-three-mvu-worker"
+
+let mvuWorkerHost =
+  create {
+    Canvas = Some mvuWorkerCanvas
+    ClearColor = 0x10141a
+    ClearAlpha = 1.0
+    Antialias = true
+  }
+
+let mvuWorkerMesh = makeCubeScene mvuWorkerHost (colorToHexRgb Color.Red)
+
+let mutable mvuWorkerSnap: Model = {
+  Angle = 0.0
+  Speed = 1.2
+  Frames = 0
+  Kicks = 0
+}
+
+let mvuThreeWorker = createMvuThreeWorker()
+
+mvuThreeWorker.onmessage <-
+  fun ev ->
+    let msg = unbox<SnapshotIn> ev.data
+
+    if msg.kind = "frame" then
+      mvuWorkerSnap <- {
+        Angle = msg.angle
+        Speed = msg.speed
+        Frames = msg.frames
+        Kicks = msg.kicks
+      }
+
+let adaptiveWorkerCanvas = getCanvas "stage-three-adaptive-worker"
+
+let adaptiveWorkerHost =
+  create {
+    Canvas = Some adaptiveWorkerCanvas
+    ClearColor = 0x10141a
+    ClearAlpha = 1.0
+    Antialias = true
+  }
+
+let adaptiveWorkerMesh =
+  makeCubeScene adaptiveWorkerHost (colorToHexRgb Color.White)
+
+let mutable adaptiveWorkerSnap: RenderFrame = {
+  Angle = 0.0
+  Speed = 1.2
+  Frames = 0
+  Kicks = 0
+}
+
+let adaptiveThreeWorker = createAdaptiveThreeWorker()
+
+adaptiveThreeWorker.onmessage <-
+  fun ev ->
+    let msg = unbox<SnapshotIn> ev.data
+
+    if msg.kind = "frame" then
+      adaptiveWorkerSnap <- {
+        Angle = msg.angle
+        Speed = msg.speed
+        Frames = msg.frames
+        Kicks = msg.kicks
+      }
+
+onCanvasClick mvuWorkerHost (fun () ->
+  mvuThreeWorker.postMessage {| kind = "kick" |})
+|> ignore
+
+onCanvasClick adaptiveWorkerHost (fun () ->
+  adaptiveThreeWorker.postMessage {| kind = "kick" |})
+|> ignore
+
+startLoop(fun _dt ->
+  setRotation mvuWorkerMesh (mvuWorkerSnap.Angle * 0.5) mvuWorkerSnap.Angle 0.0
+  render mvuWorkerHost
+
+  setRotation
+    adaptiveWorkerMesh
+    (adaptiveWorkerSnap.Angle * 0.5)
+    adaptiveWorkerSnap.Angle
+    0.0
+
+  render adaptiveWorkerHost)
+|> ignore

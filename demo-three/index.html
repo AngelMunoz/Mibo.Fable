@@ -40,7 +40,7 @@
     </style>
   </head>
   <body>
-    <div>Three.js foundation: one MVU cube and one signals cube. Click a canvas to reverse spin.</div>
+    <div>Three.js with sim on main thread and sim in workers. Click a canvas to reverse spin.</div>
     <div class="panels">
       <div class="panel">
         <div class="label">MVU cube</div>
@@ -49,6 +49,14 @@
       <div class="panel">
         <div class="label">Signals cube</div>
         <canvas id="stage-three-adaptive" width="480" height="320"></canvas>
+      </div>
+      <div class="panel">
+        <div class="label">MVU cube in worker</div>
+        <canvas id="stage-three-mvu-worker" width="480" height="320"></canvas>
+      </div>
+      <div class="panel">
+        <div class="label">Signals cube in worker</div>
+        <canvas id="stage-three-adaptive-worker" width="480" height="320"></canvas>
       </div>
     </div>
     <script type="module" src="/Main.fs.js"></script>

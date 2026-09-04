@@ -5,6 +5,8 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="MvuThreeWorker.fs" />
+    <Compile Include="AdaptiveThreeWorker.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
