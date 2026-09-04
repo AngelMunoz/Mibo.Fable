@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
 
 // Try to determine the base URL from the git repository
 // If this doesn't work for you, don't hesite to remove this function and hardcode the base URL
@@ -38,6 +39,13 @@ export default defineConfig(async ({ command, mode }) => {
         // (Fable generates the per-module .fs.js.map files).
         build: {
             sourcemap: true,
+            rollupOptions: {
+                input: {
+                    index: resolve(import.meta.dirname, 'index.html'),
+                    canvas: resolve(import.meta.dirname, 'canvas.html'),
+                    three: resolve(import.meta.dirname, 'three.html'),
+                },
+            },
         },
         server: {
             watch: {

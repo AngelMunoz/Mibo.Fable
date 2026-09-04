@@ -107,56 +107,59 @@ let resize (host: ThreeHost) (width: int) (height: int) : unit =
 let setClearColor (host: ThreeHost) (hex: int) (alpha: float) : unit =
   host.Renderer.setClearColor(hex, alpha)
 
+let private nominalDeltaMs = 16.6
+let private maxDeltaMs = 100.0
+
+let frameDelta (lastMs: float voption) (nowMs: float) : float =
+  match lastMs with
+  | ValueNone -> nominalDeltaMs
+  | ValueSome last ->
+    let dt = nowMs - last
+
+    if dt < 0.0 then 0.0
+    elif dt > maxDeltaMs then maxDeltaMs
+    else dt
+
 let stepMvu
-  (host: ThreeHost)
   (runner: HeadlessRunner<'Model, 'Msg>)
-  (ms: float)
+  (dtMs: float)
   (render: 'Model -> unit)
   : unit =
-  Mibo.Fable.Exports.stepFrame ms runner
-  render(Mibo.Fable.Exports.model runner)
+  runner.Step(TimeSpan.FromMilliseconds dtMs)
+  render runner.Model
 
 let stepAdaptive
-  (host: ThreeHost)
   (runner: Mibo.Fable.Adaptive.AdaptiveHeadless<'Frame>)
-  (ms: float)
+  (dtMs: float)
   (render: 'Frame -> unit)
   : unit =
-  Mibo.Fable.Exports.stepAdaptiveFrame ms runner
-  render(Mibo.Fable.Exports.adaptiveFrame runner)
+  runner.Step(TimeSpan.FromMilliseconds dtMs)
+  render runner.Frame
 
 let startLoop(tick: float -> unit) : (unit -> unit) =
   let mutable running = true
-  let mutable last = -1.0
+  let mutable last = ValueNone
 
   let rec frame(now: float) : unit =
     if running then
-      let dt = if last < 0.0 then 16.6 else now - last
-
-      last <- now
-      tick dt
+      tick(frameDelta last now)
+      last <- ValueSome now
       Browser.Dom.window.requestAnimationFrame frame |> ignore
 
   Browser.Dom.window.requestAnimationFrame frame |> ignore
   (fun () -> running <- false)
 
 let startMvuLoop
-  (host: ThreeHost)
   (runner: HeadlessRunner<'Model, 'Msg>)
-  (ms: float)
   (renderFn: 'Model -> unit)
   : (unit -> unit) =
-  host |> ignore
-  startLoop(fun _dt -> stepMvu host runner ms renderFn)
+  startLoop(fun dt -> stepMvu runner dt renderFn)
 
 let startAdaptiveLoop
-  (host: ThreeHost)
   (runner: Mibo.Fable.Adaptive.AdaptiveHeadless<'Frame>)
-  (ms: float)
   (renderFn: 'Frame -> unit)
   : (unit -> unit) =
-  host |> ignore
-  startLoop(fun _dt -> stepAdaptive host runner ms renderFn)
+  startLoop(fun dt -> stepAdaptive runner dt renderFn)
 
 let onCanvasClick (host: ThreeHost) (handler: unit -> unit) : IDisposable =
   let wrapped: obj = (fun (_ev: obj) -> handler()) |> unbox

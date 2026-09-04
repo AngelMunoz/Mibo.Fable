@@ -64,35 +64,40 @@ val resize: host: ThreeHost -> width: int -> height: int -> unit
 /// <summary>Sets the clear color and alpha.</summary>
 val setClearColor: host: ThreeHost -> hex: int -> alpha: float -> unit
 
-/// <summary>Runs one MVU frame: steps the runner, then renders the model.</summary>
+/// <summary>
+/// Computes the frame delta in milliseconds from the previous frame
+/// timestamp. The first frame steps a nominal 60 Hz delta. Later frames use
+/// the real delta, clamped to 100 ms, so a resume from a hidden tab cannot
+/// jump the simulation forward.</summary>
+val frameDelta: lastMs: float voption -> nowMs: float -> float
+
+/// <summary>Runs one MVU frame: steps the runner by the delta, then renders the model.</summary>
 val stepMvu:
-  host: ThreeHost ->
   runner: HeadlessRunner<'Model, 'Msg> ->
-  ms: float ->
+  dtMs: float ->
   render: ('Model -> unit) ->
     unit
 
-/// <summary>Runs one signals frame: steps the runner, then renders the frame.</summary>
+/// <summary>Runs one signals frame: steps the runner by the delta, then renders the frame.</summary>
 val stepAdaptive:
-  host: ThreeHost ->
   runner: Mibo.Fable.Adaptive.AdaptiveHeadless<'Frame> ->
-  ms: float ->
+  dtMs: float ->
   render: ('Frame -> unit) ->
     unit
 
-/// <summary>Starts a requestAnimationFrame loop for an MVU runner. Returns a stop function.</summary>
+/// <summary>
+/// Starts a requestAnimationFrame loop that steps an MVU runner with the
+/// real frame delta. Returns a stop function.</summary>
 val startMvuLoop:
-  host: ThreeHost ->
   runner: HeadlessRunner<'Model, 'Msg> ->
-  ms: float ->
   renderFn: ('Model -> unit) ->
     (unit -> unit)
 
-/// <summary>Starts a requestAnimationFrame loop for a signals runner. Returns a stop function.</summary>
+/// <summary>
+/// Starts a requestAnimationFrame loop that steps a signals runner with the
+/// real frame delta. Returns a stop function.</summary>
 val startAdaptiveLoop:
-  host: ThreeHost ->
   runner: Mibo.Fable.Adaptive.AdaptiveHeadless<'Frame> ->
-  ms: float ->
   renderFn: ('Frame -> unit) ->
     (unit -> unit)
 

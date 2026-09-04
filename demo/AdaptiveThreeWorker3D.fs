@@ -1,4 +1,4 @@
-module DemoThree.AdaptiveThreeWorker
+module Demo.AdaptiveThreeWorker3D
 
 open System
 open Fable.Core

@@ -1,4 +1,4 @@
-module DemoThree.Main
+module Demo.ThreeMain
 
 open Browser.Types
 open Fable.Core
@@ -90,7 +90,7 @@ let renderMvu(model: Model) : unit =
   render mvuHost
 
 onCanvasClick mvuHost (fun () -> dispatch Kick mvuRunner) |> ignore
-startMvuLoop mvuHost mvuRunner 16.6 renderMvu |> ignore
+startMvuLoop mvuRunner renderMvu |> ignore
 
 type WorldRoots = {
   Angle: cval<float>
@@ -154,7 +154,7 @@ onCanvasClick adaptiveHost (fun () ->
   postAdaptiveIntent kickWorld adaptiveRunner)
 |> ignore
 
-startAdaptiveLoop adaptiveHost adaptiveRunner 16.6 renderAdaptive |> ignore
+startAdaptiveLoop adaptiveRunner renderAdaptive |> ignore
 
 // ── Worker-driven cubes: sim runs in a worker, render stays on main ─────────
 // Workers post plain snapshots (angle, speed, frames, kicks). three.js
@@ -168,10 +168,10 @@ type ISimWorker =
   abstract postMessage: data: obj -> unit
   abstract onmessage: (IWorkerMessageEvent -> unit) with get, set
 
-[<Emit("new Worker(new URL('./MvuThreeWorker.fs.js', import.meta.url), { type: 'module' })")>]
+[<Emit("new Worker(new URL('./MvuThreeWorker3D.fs.js', import.meta.url), { type: 'module' })")>]
 let createMvuThreeWorker() : ISimWorker = jsNative
 
-[<Emit("new Worker(new URL('./AdaptiveThreeWorker.fs.js', import.meta.url), { type: 'module' })")>]
+[<Emit("new Worker(new URL('./AdaptiveThreeWorker3D.fs.js', import.meta.url), { type: 'module' })")>]
 let createAdaptiveThreeWorker() : ISimWorker = jsNative
 
 type SnapshotIn =

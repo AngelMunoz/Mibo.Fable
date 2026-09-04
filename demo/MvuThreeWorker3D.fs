@@ -1,4 +1,4 @@
-module DemoThree.MvuThreeWorker
+module Demo.MvuThreeWorker3D
 
 open Fable.Core
 open Mibo.Fable.Exports
