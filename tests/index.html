@@ -8,10 +8,19 @@
     <div id="qunit"></div>
     <div id="qunit-fixture"></div>
     <script type="module">
-      import { QUnit } from "qunit";
+      // The config must exist before QUnit loads, so QUnit adopts the
+      // autostart setting instead of running on an empty registry.
+      globalThis.QUnit = { config: { autostart: false } };
+
+      const [{ QUnit }, files] = await Promise.all([
+        import("qunit"),
+        fetch("/__qunit-tests__/files").then((res) => {
+          if (!res.ok) throw new Error(`file list request failed: ${res.status}`);
+          return res.json();
+        }),
+      ]);
 
       window.__failures = [];
-      QUnit.config.autostart = false;
       QUnit.on("testEnd", (test) => {
         if (test.status !== "failed") {
           return;
@@ -31,15 +40,16 @@
         document.title = "RUN_END " + details.status;
       });
 
-      await import("./QUnit.Tests.fs.js");
-      await import("./Adaptive.Tests.fs.js");
-      await import("./MapTests.fs.js");
-      await import("./SetTests.fs.js");
-      await import("./ListTests.fs.js");
-      await import("./ThreeConversions.Tests.fs.js");
-      await import("./ThreeBindings.Tests.fs.js");
-      await import("./ThreeHost.Tests.fs.js");
-      await import("./ThreeHost.Browser.Tests.fs.js");
+      for (const file of files) {
+        try {
+          await import(/* @vite-ignore */ file);
+        } catch (err) {
+          window.__failures.push({
+            name: file,
+            messages: ["failed to import: " + (err?.message ?? err)],
+          });
+        }
+      }
       QUnit.start();
     </script>
   </body>

@@ -61,4 +61,5 @@ for (const failure of run.failures) {
 
 await browser.close();
 await server.close();
-process.exit(run.status === 'passed' ? 0 : 1);
+const passed = run.status === 'passed' && run.failures.length === 0;
+process.exit(passed ? 0 : 1);
